@@ -33,7 +33,7 @@ class VoucherType(models.Model):
 
     def __str__(self):
         return self.name
-
+#dad
 
 class Voucher(models.Model):
     STATUS_CHOICES = [
