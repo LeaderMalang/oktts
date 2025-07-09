@@ -47,7 +47,7 @@ class Voucher(models.Model):
     narration = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='vouchers_created')
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='vouchers_approved', blank=True)
-    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True)
+    branch = models.ForeignKey('setting.Branch', on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
 
     def __str__(self):

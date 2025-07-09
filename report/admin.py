@@ -1,3 +1,8 @@
 from django.contrib import admin
+from .models import ReportLog
 
-# Register your models here.
+@admin.register(ReportLog)
+class ReportLogAdmin(admin.ModelAdmin):
+    list_display = ['report_name', 'generated_by', 'filters_used']
+
+
