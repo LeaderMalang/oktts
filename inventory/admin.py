@@ -1,6 +1,7 @@
 # inventory/admin.py
 from django.contrib import admin
 from .models import Product, Party, Batch, StockMovement
+from .forms import PartyForm
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -10,7 +11,17 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Party)
 class PartyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'party_type', 'phone', 'email', 'category', 'latitude', 'longitude', 'price_list')
+    form = PartyForm
+    list_display = (
+        'name',
+        'party_type',
+        'phone',
+        'email',
+        'category',
+        'latitude',
+        'longitude',
+        'price_list',
+    )
     search_fields = ('name', 'phone', 'email', 'category')
     list_filter = ('party_type',)
 
