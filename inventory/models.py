@@ -14,6 +14,20 @@ class Product(models.Model):
     fed_tax_ratio = models.DecimalField(max_digits=5, decimal_places=2)
     disable_sale_purchase = models.BooleanField(default=False)
 
+    @property
+    def rate(self):
+        """Alias to the product's trade price for unified naming."""
+        return self.trade_price
+
+    @rate.setter
+    def rate(self, value):
+        self.trade_price = value
+
+    @property
+    def stock(self):
+        """Total available quantity across all batches."""
+        return self.batch_set.aggregate(total=models.Sum('quantity'))['total'] or 0
+
     def __str__(self):
         return self.name
 
@@ -27,6 +41,24 @@ class Batch(models.Model):
     sale_price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField()
     warehouse = models.ForeignKey('setting.Warehouse', on_delete=models.CASCADE)  # optional but recommended
+
+    @property
+    def rate(self):
+        """Alias to sale price using common terminology."""
+        return self.sale_price
+
+    @rate.setter
+    def rate(self, value):
+        self.sale_price = value
+
+    @property
+    def stock(self):
+        """Expose quantity as stock for clarity."""
+        return self.quantity
+
+    @stock.setter
+    def stock(self, value):
+        self.quantity = value
 
     def __str__(self):
         return f"{self.product.name} - {self.batch_number}"
@@ -78,3 +110,24 @@ class Party(models.Model):
     chart_of_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True)
     def __str__(self):
         return f"{self.name} ({self.party_type})"
+
+
+# Custom price lists
+class PriceList(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class PriceListItem(models.Model):
+    price_list = models.ForeignKey(PriceList, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    custom_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        unique_together = ('price_list', 'product')
+
+    def __str__(self):
+        return f"{self.price_list.name} - {self.product.name}"

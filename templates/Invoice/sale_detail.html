@@ -7,7 +7,14 @@
     <div class="col-md-6"><strong>Customer:</strong> {{ sale.customer.name }}</div>
     <div class="col-md-6"><strong>Warehouse:</strong> {{ sale.warehouse.name }}</div>
     <div class="col-md-6"><strong>Salesman:</strong> {{ sale.salesman }}</div>
-    <div class="col-md-6"><strong>Delivery:</strong> {{ sale.delivery_person }}</div>
+    <div class="col-md-6"><strong>Booking Man:</strong> {{ sale.booking_man_id }}</div>
+    <div class="col-md-6"><strong>Supplying Man:</strong> {{ sale.supplying_man_id }}</div>
+    <div class="col-md-6"><strong>Delivery:</strong> {{ sale.delivery_man_id }}</div>
+    <div class="col-md-6"><strong>City:</strong> {{ sale.city_id }}</div>
+    <div class="col-md-6"><strong>Area:</strong> {{ sale.area_id }}</div>
+    <div class="col-md-6"><strong>Sub Total:</strong> Rs {{ sale.sub_total }}</div>
+    <div class="col-md-6"><strong>Tax:</strong> Rs {{ sale.tax }}</div>
+    <div class="col-md-6"><strong>QR Code:</strong> {{ sale.qr_code }}</div>
     <div class="col-md-6"><strong>Net Amount:</strong> Rs {{ sale.net_amount }}</div>
   </div>
 
@@ -32,6 +39,14 @@
       {% endfor %}
     </tbody>
   </table>
+  <h5 class="mt-4">Recovery Logs</h5>
+  <ul>
+    {% for log in sale.recovery_logs.all %}
+      <li>{{ log.date }} - {{ log.amount }}{% if log.recovered_by %} by {{ log.recovered_by }}{% endif %}</li>
+    {% empty %}
+      <li>No recovery logs.</li>
+    {% endfor %}
+  </ul>
   <a href="{% url 'sale_list' %}" class="btn btn-secondary mt-3">Back to List</a>
 </div>
 {% endblock %}
