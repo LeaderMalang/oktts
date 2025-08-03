@@ -3,7 +3,7 @@ from setting.models import Warehouse
 from inventory.models import StockMovement,Party,Product,Batch
 from voucher.models import Voucher
 from utils.voucher import create_voucher_for_transaction
-from utils.stock import stock_return,stock_out
+from utils.stock import stock_return, stock_out
 
 # Create your models here.
 class SaleInvoice(models.Model):
@@ -13,6 +13,7 @@ class SaleInvoice(models.Model):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     salesman = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
     delivery_person = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
+    recoveries = models.ManyToManyField('hr.Employee', through='RecoveryLog', related_name='recovery_invoices', blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -102,3 +103,13 @@ class SaleReturnItem(models.Model):
     discount2 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+
+class RecoveryLog(models.Model):
+    invoice = models.ForeignKey(SaleInvoice, on_delete=models.CASCADE, related_name='recovery_logs')
+    employee = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='recovery_logs')
+    date = models.DateField()
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.invoice.invoice_no} - {self.date}"
