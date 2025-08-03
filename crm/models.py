@@ -1,6 +1,7 @@
 from django.db import models
 
 
+
 class Lead(models.Model):
     """A potential customer or opportunity."""
 
@@ -62,3 +63,4 @@ class Interaction(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - simple string repr
         return f"{self.lead} - {self.get_interaction_type_display()}"
+

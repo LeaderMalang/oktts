@@ -55,9 +55,23 @@ INSTALLED_APPS = [
     'voucher',
     'sale',
     'purchase',
+    'expense',
     'report',
     'user',
+
+
+
+    'rest_framework',
+
     'crm',
+    'task',
+    'notification',
+    'pricing',
+    'expense',
+    'investor',
+    'syncqueue',
+
+
 ]
 
 MIDDLEWARE = [

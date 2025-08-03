@@ -5,6 +5,7 @@ from .models import Lead, Interaction
 class LeadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lead
+
         fields = [
             "id",
             "title",
@@ -17,9 +18,11 @@ class LeadSerializer(serializers.ModelSerializer):
         ]
 
 
+
 class InteractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interaction
+
         fields = [
             "id",
             "lead",
@@ -29,3 +32,4 @@ class InteractionSerializer(serializers.ModelSerializer):
             "follow_up_date",
             "created_at",
         ]
+
