@@ -1,8 +1,12 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from user.models import User
 
 
 class EmployeeRole(models.TextChoices):
+
+
     MANAGER = "MANAGER", "Manager"
     SALES = "SALES", "Sales"
     DELIVERY = "DELIVERY", "Delivery"
@@ -11,15 +15,19 @@ class EmployeeRole(models.TextChoices):
     RECOVERY_OFFICER = "RECOVERY_OFFICER", "Recovery Officer"
 
 
+
+
 class Employee(models.Model):
 
     user = models.ForeignKey(
+
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="employee"
     )
     name = models.CharField(max_length=100)
     role = models.CharField(
         max_length=30, choices=EmployeeRole.choices, default=EmployeeRole.SALES
     )
+
 
     phone = models.CharField(max_length=15)
     email = models.EmailField(blank=True, null=True)
@@ -145,3 +153,44 @@ class PayrollSlip(models.Model):
 
     def __str__(self):
         return f"{self.employee.name} - {self.month.strftime('%B %Y')}"
+
+
+class Task(models.Model):
+    """General task assigned to an employee."""
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("IN_PROGRESS", "In Progress"),
+        ("COMPLETED", "Completed"),
+        ("CANCELLED", "Cancelled"),
+    ]
+
+    assignment = models.CharField(max_length=255)
+    assigned_to = models.ForeignKey(
+        Employee, related_name="tasks", on_delete=models.CASCADE
+    )
+    assigned_by = models.ForeignKey(
+        Employee,
+        related_name="assigned_tasks",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    due_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
+
+    # Optional links
+    party = models.ForeignKey(
+        "inventory.Party", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    invoice_content_type = models.ForeignKey(
+        ContentType, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    invoice_object_id = models.PositiveIntegerField(null=True, blank=True)
+    invoice = GenericForeignKey("invoice_content_type", "invoice_object_id")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.assignment
