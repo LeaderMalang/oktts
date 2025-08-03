@@ -12,9 +12,18 @@ class PurchaseInvoiceItemInline(admin.TabularInline):
     extra = 1
 
 class PurchaseInvoiceAdmin(admin.ModelAdmin):
-    list_display = ('invoice_no', 'date', 'supplier', 'warehouse', 'total_amount')
-    list_filter = ('warehouse', 'supplier')
-    search_fields = ('invoice_no', 'supplier__name')
+    list_display = (
+        'invoice_no',
+        'company_invoice_number',
+        'date',
+        'supplier',
+        'warehouse',
+        'grand_total',
+        'status',
+        'payment_method',
+    )
+    list_filter = ('warehouse', 'supplier', 'status', 'payment_method')
+    search_fields = ('invoice_no', 'company_invoice_number', 'supplier__name')
     inlines = [PurchaseInvoiceItemInline]
     readonly_fields = ('voucher',)
 
