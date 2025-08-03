@@ -1,6 +1,10 @@
 /db.sqlite3
 /env
 /*/migrations
+
+**/__pycache__/
+*.pyc
+
 !crm/migrations
 !task/migrations
 !notification/migrations
@@ -9,3 +13,4 @@
 !investor/migrations
 !syncqueue/migrations
 **/__pycache__/
+

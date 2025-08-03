@@ -1,5 +1,6 @@
 from django import forms
 from django.forms.models import inlineformset_factory
+
 from .models import SaleInvoice, SaleInvoiceItem
 
 
@@ -8,42 +9,49 @@ class SaleInvoiceForm(forms.ModelForm):
         model = SaleInvoice
         fields = (
             'invoice_no',
+
+            'company_invoice_number',
+
             'date',
             'customer',
             'warehouse',
             'salesman',
 
-            'booking_man_id',
-            'supplying_man_id',
-            'delivery_man_id',
-            'city_id',
-            'area_id',
-            'sub_total',
-            'tax',
-            'qr_code',
+            'delivery_person',
+            'investor',
             'total_amount',
             'discount',
-            'net_amount',
-
+            'tax',
+            'grand_total',
+            'payment_method',
+            'paid_amount',
+            'status',
         )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        total = cleaned_data.get('total_amount') or 0
+        discount = cleaned_data.get('discount') or 0
+        tax = cleaned_data.get('tax') or 0
+        grand_total = cleaned_data.get('grand_total') or 0
+        expected_grand_total = total - discount + tax
+        if grand_total != expected_grand_total:
+            self.add_error('grand_total', 'Grand total must equal total minus discount plus tax.')
+
+        paid = cleaned_data.get('paid_amount') or 0
+        if paid > grand_total:
+            self.add_error('paid_amount', 'Paid amount cannot exceed grand total.')
+        return cleaned_data
+
+
+        
 
 SaleInvoiceItemForm = inlineformset_factory(
     SaleInvoice,
     SaleInvoiceItem,
-    fields=(
-        'product',
-        'batch',
-        'quantity',
-        'bonus',
-        'packing',
-        'rate',
-        'discount1',
-        'discount2',
-        'amount',
-        'net_amount',
-    ),
+    fields=('product', 'quantity', 'rate', 'amount'),
     extra=1,
     can_delete=True,
 )
+
 
