@@ -9,11 +9,14 @@ class SaleInvoiceForm(forms.ModelForm):
         model = SaleInvoice
         fields = (
             'invoice_no',
+
             'company_invoice_number',
+
             'date',
             'customer',
             'warehouse',
             'salesman',
+
             'delivery_person',
             'investor',
             'total_amount',
@@ -41,6 +44,8 @@ class SaleInvoiceForm(forms.ModelForm):
         return cleaned_data
 
 
+        
+
 SaleInvoiceItemForm = inlineformset_factory(
     SaleInvoice,
     SaleInvoiceItem,
@@ -48,4 +53,5 @@ SaleInvoiceItemForm = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
 
