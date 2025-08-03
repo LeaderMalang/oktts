@@ -1,4 +1,5 @@
 from django.db import models
+
 from voucher.models import ChartOfAccount, Voucher, VoucherType
 from utils.voucher import create_voucher_for_transaction
 
@@ -9,10 +10,12 @@ class ExpenseCategory(models.Model):
     chart_of_account = models.ForeignKey(ChartOfAccount, on_delete=models.PROTECT)
 
     def __str__(self) -> str:
+
         return self.name
 
 
 class Expense(models.Model):
+
     """An individual expense entry that posts to accounting via a voucher."""
     date = models.DateField()
     category = models.ForeignKey(ExpenseCategory, on_delete=models.PROTECT)
@@ -46,3 +49,4 @@ class Expense(models.Model):
             )
             self.voucher = voucher
             super().save(update_fields=["voucher"])
+
