@@ -1,0 +1,8 @@
+{
+  "name": "Pharma Distributor ERP",
+  "description": "A dashboard interface for a Pharmaceutical Distributor ERP system, featuring sales invoicing, reporting, and AI-powered analytics.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "prompt": ""
+}
