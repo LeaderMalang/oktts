@@ -9,7 +9,17 @@ from .forms import SaleInvoiceForm,SaleInvoiceItemForm
 
 @require_http_methods(["GET"])
 def sale_invoice_list(request):
-    sales = SaleInvoice.objects.select_related('customer').all()
+    sales = (
+        SaleInvoice.objects.select_related(
+            'customer',
+            'salesman',
+            'booking_man_id',
+            'supplying_man_id',
+            'delivery_man_id',
+            'city_id',
+            'area_id',
+        ).all()
+    )
     return render(request, 'invoice/sale_list.html', {'sales': sales})
 
 @require_http_methods(["GET", "POST"])
@@ -49,5 +59,16 @@ def sale_invoice_edit(request, pk):
 
 @require_http_methods(["GET"])
 def sale_invoice_detail(request, pk):
-    invoice = get_object_or_404(SaleInvoice, pk=pk)
-    return render(request, 'invoice/sale_detail.html', {'invoice': invoice})
+    invoice = get_object_or_404(
+        SaleInvoice.objects.select_related(
+            'customer',
+            'salesman',
+            'booking_man_id',
+            'supplying_man_id',
+            'delivery_man_id',
+            'city_id',
+            'area_id',
+        ),
+        pk=pk,
+    )
+    return render(request, 'invoice/sale_detail.html', {'sale': invoice})

@@ -5,8 +5,25 @@ from .models import SaleInvoice,SaleInvoiceItem
 
 class SaleInvoiceForm(forms.ModelForm):
     class Meta:
-        model=SaleInvoice
-        fields=('invoice_no','date','customer', 'warehouse','salesman','delivery_person','total_amount','discount','net_amount',)
+        model = SaleInvoice
+        fields = (
+            'invoice_no',
+            'date',
+            'customer',
+            'warehouse',
+            'salesman',
+            'booking_man_id',
+            'supplying_man_id',
+            'delivery_man_id',
+            'city_id',
+            'area_id',
+            'sub_total',
+            'tax',
+            'qr_code',
+            'total_amount',
+            'discount',
+            'net_amount',
+        )
 
 
 

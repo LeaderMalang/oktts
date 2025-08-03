@@ -1,9 +1,9 @@
 from django.db import models
 from setting.models import Warehouse
-from inventory.models import StockMovement,Party,Product,Batch
+from inventory.models import StockMovement, Party, Product, Batch
 from voucher.models import Voucher
 from utils.voucher import create_voucher_for_transaction
-from utils.stock import stock_return,stock_out
+from utils.stock import stock_return, stock_out
 
 # Create your models here.
 class SaleInvoice(models.Model):
@@ -12,7 +12,14 @@ class SaleInvoice(models.Model):
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     salesman = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
-    delivery_person = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
+    booking_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
+    supplying_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplies')
+    delivery_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
+    city_id = models.ForeignKey('setting.City', on_delete=models.SET_NULL, null=True, blank=True)
+    area_id = models.ForeignKey('setting.Area', on_delete=models.SET_NULL, null=True, blank=True)
+    sub_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    qr_code = models.CharField(max_length=255, blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -102,3 +109,14 @@ class SaleReturnItem(models.Model):
     discount2 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+
+class RecoveryLog(models.Model):
+    invoice = models.ForeignKey(SaleInvoice, related_name='recovery_logs', on_delete=models.CASCADE)
+    recovered_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField(auto_now_add=True)
+    note = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.invoice.invoice_no} - {self.amount}"

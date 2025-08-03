@@ -4,7 +4,13 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from inventory.models import Batch, StockMovement
-from .models import SaleInvoice, SaleInvoiceItem, SaleReturn, SaleReturnItem
+from .models import (
+    SaleInvoice,
+    SaleInvoiceItem,
+    SaleReturn,
+    SaleReturnItem,
+    RecoveryLog,
+)
 
 # --- Inlines ---
 
@@ -38,8 +44,8 @@ print_invoice_pdf.short_description = "Print Invoice PDF"
 
 @admin.register(SaleInvoice)
 class SaleInvoiceAdmin(admin.ModelAdmin):
-    list_display = ['invoice_no', 'date', 'customer', 'warehouse', 'total_amount', 'net_amount']
-    list_filter = ['date', 'warehouse', 'salesman', 'delivery_person']
+    list_display = ['invoice_no', 'date', 'customer', 'warehouse', 'sub_total', 'tax', 'total_amount', 'net_amount']
+    list_filter = ['date', 'warehouse', 'salesman', 'booking_man_id', 'supplying_man_id', 'delivery_man_id', 'city_id', 'area_id']
     search_fields = ['invoice_no', 'customer__name']
     inlines = [SaleInvoiceItemInline]
     actions = [print_invoice_pdf]
@@ -67,7 +73,19 @@ class SaleInvoiceAdmin(admin.ModelAdmin):
         # super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('customer', 'salesman', 'delivery_person')
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                'customer',
+                'salesman',
+                'booking_man_id',
+                'supplying_man_id',
+                'delivery_man_id',
+                'city_id',
+                'area_id',
+            )
+        )
 
 # --- SaleReturn Admin ---
 
@@ -77,3 +95,9 @@ class SaleReturnAdmin(admin.ModelAdmin):
     list_filter = ['date', 'warehouse']
     search_fields = ['return_no', 'customer__name']
     inlines = [SaleReturnItemInline]
+
+
+@admin.register(RecoveryLog)
+class RecoveryLogAdmin(admin.ModelAdmin):
+    list_display = ['invoice', 'recovered_by', 'amount', 'date']
+    list_filter = ['date', 'recovered_by']
