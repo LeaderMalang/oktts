@@ -1,11 +1,33 @@
 from django.db import models
 from user.models import User
 
+
+class EmployeeRole(models.TextChoices):
+    SUPER_ADMIN = "SUPER_ADMIN", "Super Admin"
+    CUSTOMER = "CUSTOMER", "Customer"
+    MANAGER = "MANAGER", "Manager"
+    SALES = "SALES", "Sales"
+    DELIVERY = "DELIVERY", "Delivery"
+    WAREHOUSE_ADMIN = "WAREHOUSE_ADMIN", "Warehouse Admin"
+    DELIVERY_MANAGER = "DELIVERY_MANAGER", "Delivery Manager"
+    RECOVERY_OFFICER = "RECOVERY_OFFICER", "Recovery Officer"
+    INVESTOR = "INVESTOR", "Investor"
+    SUPPLIER = "supplier", "Supplier"
+
 class Employee(models.Model):
-   
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee')
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employee",
+    )
+    role = models.CharField(
+        max_length=30, choices=EmployeeRole.choices, blank=True, null=True
+    )
     name = models.CharField(max_length=100)
-    
+
     phone = models.CharField(max_length=15)
     email = models.EmailField(blank=True, null=True)
     cnic = models.CharField(max_length=20, blank=True)

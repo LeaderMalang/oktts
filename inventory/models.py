@@ -14,6 +14,20 @@ class Product(models.Model):
     fed_tax_ratio = models.DecimalField(max_digits=5, decimal_places=2)
     disable_sale_purchase = models.BooleanField(default=False)
 
+    @property
+    def rate(self):
+        """Alias to the product's trade price for unified naming."""
+        return self.trade_price
+
+    @rate.setter
+    def rate(self, value):
+        self.trade_price = value
+
+    @property
+    def stock(self):
+        """Total available quantity across all batches."""
+        return self.batch_set.aggregate(total=models.Sum('quantity'))['total'] or 0
+
     def __str__(self):
         return self.name
 
@@ -27,6 +41,24 @@ class Batch(models.Model):
     sale_price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField()
     warehouse = models.ForeignKey('setting.Warehouse', on_delete=models.CASCADE)  # optional but recommended
+
+    @property
+    def rate(self):
+        """Alias to sale price using common terminology."""
+        return self.sale_price
+
+    @rate.setter
+    def rate(self, value):
+        self.sale_price = value
+
+    @property
+    def stock(self):
+        """Expose quantity as stock for clarity."""
+        return self.quantity
+
+    @stock.setter
+    def stock(self, value):
+        self.quantity = value
 
     def __str__(self):
         return f"{self.product.name} - {self.batch_number}"
