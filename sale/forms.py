@@ -11,4 +11,10 @@ class SaleInvoiceForm(forms.ModelForm):
 
 
 
-SaleInvoiceItemForm=inlineformset_factory(SaleInvoice,SaleInvoiceItem,fields=('product', 'quantity','rate','amount',), extra=1,can_delete=True)
+SaleInvoiceItemForm = inlineformset_factory(
+    SaleInvoice,
+    SaleInvoiceItem,
+    fields=('product', 'quantity', 'bonus', 'rate', 'discount'),
+    extra=1,
+    can_delete=True,
+)
