@@ -2,17 +2,8 @@ const CACHE_NAME = 'pharma-erp-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/index.tsx',
-  '/App.tsx',
-  '/types.ts',
-  '/constants.tsx',
-  'https://cdn.tailwindcss.com',
-  "https://esm.sh/react-dom/",
-  "https://esm.sh/react/",
-  "https://esm.sh/react",
-  "https://esm.sh/@google/genai",
-  "https://esm.sh/recharts",
-  "https://esm.sh/qrcode.react"
+  '/favicon.svg',
+  'https://cdn.tailwindcss.com'
 ];
 
 // --- Caching Strategy ---
@@ -28,31 +19,46 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-    // We only want to cache GET requests.
+    // Only handle GET requests
     if (event.request.method !== 'GET') {
         return;
     }
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
+
+    const requestURL = new URL(event.request.url);
+
+    // Cache-first strategy for built assets
+    if (requestURL.origin === self.location.origin && requestURL.pathname.startsWith('/assets/')) {
+        event.respondWith(
+            caches.match(event.request).then(response => {
                 if (response) {
-                    return response; // Serve from cache
+                    return response;
                 }
-                // Not in cache, fetch from network
-                return fetch(event.request).then(
-                    response => {
-                         if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
-                            return response;
-                        }
-                        const responseToCache = response.clone();
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                cache.put(event.request, responseToCache);
-                            });
-                        return response;
+                return fetch(event.request).then(fetchResponse => {
+                    if (fetchResponse && fetchResponse.status === 200) {
+                        const responseClone = fetchResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
                     }
-                );
+                    return fetchResponse;
+                });
             })
+        );
+        return;
+    }
+
+    // Generic cache-first strategy
+    event.respondWith(
+        caches.match(event.request).then(response => {
+            if (response) {
+                return response;
+            }
+            return fetch(event.request).then(fetchResponse => {
+                if (fetchResponse && fetchResponse.status === 200 && (fetchResponse.type === 'basic' || fetchResponse.type === 'cors')) {
+                    const responseToCache = fetchResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+                }
+                return fetchResponse;
+            });
+        })
     );
 });
 
