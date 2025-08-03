@@ -1,11 +1,10 @@
-
 import React from 'react';
-import { Page, User } from '../types';
+import { User } from '../types';
 import { ICONS } from '../constants';
+import { Link, useLocation } from 'react-router-dom';
+import ROUTES from '../routes';
 
 interface SidebarProps {
-  currentPage: Page;
-  setCurrentPage: (page: Page) => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
   currentUser: User | null;
@@ -20,19 +19,16 @@ const NavHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const NavItem: React.FC<{
   icon: React.ReactNode;
   label: string;
-  page: Page;
-  currentPage: Page;
-  setCurrentPage: (page: Page) => void;
+  to: string;
   onClick: () => void;
-}> = ({ icon, label, page, currentPage, setCurrentPage, onClick }) => {
-  const isSelected = currentPage === page;
+}> = ({ icon, label, to, onClick }) => {
+  const location = useLocation();
+  const isSelected = location.pathname === to;
 
   return (
-    <button
-      onClick={() => {
-        setCurrentPage(page);
-        onClick();
-      }}
+    <Link
+      to={to}
+      onClick={onClick}
       className={`flex items-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150 rounded-r-full mr-4 ${
         isSelected
           ? 'text-white bg-blue-600'
@@ -41,18 +37,17 @@ const NavItem: React.FC<{
     >
       <span className="mr-4">{icon}</span>
       <span className="w-full text-left">{label}</span>
-    </button>
+    </Link>
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isSidebarOpen, setSidebarOpen, currentUser }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, currentUser }) => {
   const handleNavClick = () => {
-    // Close sidebar on navigation in mobile view
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
   };
-  
+
   const role = currentUser?.role;
 
   const renderNavItems = () => {
@@ -60,83 +55,83 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isSideba
       case 'SUPER_ADMIN':
         return (
           <>
-            <NavItem icon={ICONS.dashboard} label="Dashboard" page="dashboard" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES.dashboard.path} onClick={handleNavClick} />
             <NavHeader>Orders</NavHeader>
-            <NavItem icon={ICONS.orders} label="Sale Invoices" page="order-management" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.orders} label="Sale Invoices" to={ROUTES['order-management'].path} onClick={handleNavClick} />
             <NavHeader>Sales</NavHeader>
-            <NavItem icon={ICONS.crm} label="CRM" page="crm" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.pos} label="Point of Sale" page="pos" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.plus} label="Create Sale Invoice" page="new-sale-invoice" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.return} label="Create Sale Return" page="new-sale-return" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.list} label="Sale Returns" page="sale-returns" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.crm} label="CRM" to={ROUTES.crm.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.pos} label="Point of Sale" to={ROUTES.pos.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.plus} label="Create Sale Invoice" to={ROUTES['new-sale-invoice'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.return} label="Create Sale Return" to={ROUTES['new-sale-return'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.list} label="Sale Returns" to={ROUTES['sale-returns'].path} onClick={handleNavClick} />
             <NavHeader>Purchases</NavHeader>
-            <NavItem icon={ICONS.plus} label="Create Purchase Invoice" page="new-purchase-invoice" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.list} label="Purchase Invoices" page="purchase-invoices" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.return} label="Create Purchase Return" page="new-purchase-return" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.list} label="Purchase Returns" page="purchase-returns" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.plus} label="Create Purchase Invoice" to={ROUTES['new-purchase-invoice'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.list} label="Purchase Invoices" to={ROUTES['purchase-invoices'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.return} label="Create Purchase Return" to={ROUTES['new-purchase-return'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.list} label="Purchase Returns" to={ROUTES['purchase-returns'].path} onClick={handleNavClick} />
             <NavHeader>Operations</NavHeader>
-            <NavItem icon={ICONS.recovery} label="Credit Recovery" page="credit-recovery" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.ledger} label="Ledger" page="ledger" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.tasks} label="Tasks" page="tasks" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.reports} label="Reports" page="reports" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.inventory} label="Inventory" page="inventory" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.stock_audit} label="Stock Audit" page="stock-audit" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.hr} label="HR" page="hr" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.recovery} label="Credit Recovery" to={ROUTES['credit-recovery'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.ledger} label="Ledger" to={ROUTES.ledger.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.tasks} label="Tasks" to={ROUTES.tasks.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.reports} label="Reports" to={ROUTES.reports.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.inventory} label="Inventory" to={ROUTES.inventory.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.stock_audit} label="Stock Audit" to={ROUTES['stock-audit'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.hr} label="HR" to={ROUTES.hr.path} onClick={handleNavClick} />
             <NavHeader>Finance</NavHeader>
-            <NavItem icon={ICONS.expense} label="Expenses" page="expenses" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.investor} label="Investors" page="investors" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.expense} label="Expenses" to={ROUTES.expenses.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.investor} label="Investors" to={ROUTES.investors.path} onClick={handleNavClick} />
             <NavHeader>System</NavHeader>
-            <NavItem icon={ICONS.management} label="Management" page="management" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.management} label="Management" to={ROUTES.management.path} onClick={handleNavClick} />
           </>
         );
       case 'WAREHOUSE_ADMIN':
         return (
           <>
-            <NavItem icon={ICONS.dashboard} label="Dashboard" page="dashboard" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES.dashboard.path} onClick={handleNavClick} />
             <NavHeader>Operations</NavHeader>
-            <NavItem icon={ICONS.inventory} label="Inventory" page="inventory" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.stock_audit} label="Stock Audit" page="stock-audit" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.tasks} label="My Tasks" page="tasks" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.leave} label="My Leave" page="my-leave" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.inventory} label="Inventory" to={ROUTES.inventory.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.stock_audit} label="Stock Audit" to={ROUTES['stock-audit'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.tasks} label="My Tasks" to={ROUTES.tasks.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.leave} label="My Leave" to={ROUTES['my-leave'].path} onClick={handleNavClick} />
           </>
         );
       case 'DELIVERY_MANAGER':
         return (
           <>
-            <NavItem icon={ICONS.dashboard} label="Dashboard" page="dashboard" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES.dashboard.path} onClick={handleNavClick} />
             <NavHeader>Orders</NavHeader>
-            <NavItem icon={ICONS.orders} label="Delivery Management" page="order-management" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.tasks} label="My Tasks" page="tasks" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.leave} label="My Leave" page="my-leave" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.orders} label="Delivery Management" to={ROUTES['order-management'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.tasks} label="My Tasks" to={ROUTES.tasks.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.leave} label="My Leave" to={ROUTES['my-leave'].path} onClick={handleNavClick} />
           </>
         );
-       case 'RECOVERY_OFFICER':
+      case 'RECOVERY_OFFICER':
         return (
           <>
-            <NavItem icon={ICONS.dashboard} label="Dashboard" page="recovery-officer-dashboard" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES['recovery-officer-dashboard'].path} onClick={handleNavClick} />
             <NavHeader>Operations</NavHeader>
-            <NavItem icon={ICONS.recovery} label="Credit Recovery" page="credit-recovery" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.ledger} label="Ledger" page="ledger" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.tasks} label="My Tasks" page="tasks" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.leave} label="My Leave" page="my-leave" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.recovery} label="Credit Recovery" to={ROUTES['credit-recovery'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.ledger} label="Ledger" to={ROUTES.ledger.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.tasks} label="My Tasks" to={ROUTES.tasks.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.leave} label="My Leave" to={ROUTES['my-leave'].path} onClick={handleNavClick} />
           </>
         );
       case 'INVESTOR':
         return (
           <>
-            <NavItem icon={ICONS.dashboard} label="Dashboard" page="investor-dashboard" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES['investor-dashboard'].path} onClick={handleNavClick} />
             <NavHeader>My Finance</NavHeader>
-            <NavItem icon={ICONS.ledger} label="My Ledger" page="investor-ledger" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.ledger} label="My Ledger" to={ROUTES['investor-ledger'].path} onClick={handleNavClick} />
           </>
         );
       case 'CUSTOMER':
         return (
           <>
-            <NavItem icon={ICONS.dashboard} label="Dashboard" page="dashboard" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES.dashboard.path} onClick={handleNavClick} />
             <NavHeader>My Account</NavHeader>
-            <NavItem icon={ICONS.orders} label="My Orders" page="my-orders" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.ledger} label="My Ledger" page="ledger" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
-            <NavItem icon={ICONS.plus} label="Place New Order" page="new-sale-invoice" currentPage={currentPage} setCurrentPage={setCurrentPage} onClick={handleNavClick} />
+            <NavItem icon={ICONS.orders} label="My Orders" to={ROUTES['my-orders'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.ledger} label="My Ledger" to={ROUTES.ledger.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.plus} label="Place New Order" to={ROUTES['new-sale-invoice'].path} onClick={handleNavClick} />
           </>
         );
       default:
@@ -146,23 +141,22 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isSideba
 
   return (
     <>
-      {/* Mobile-only overlay */}
       {isSidebarOpen && (
-        <div 
-          onClick={() => setSidebarOpen(false)} 
+        <div
+          onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 bg-black opacity-50 z-20 md:hidden"
           aria-hidden="true"
         ></div>
       )}
 
-      <aside 
+      <aside
         className={`fixed inset-y-0 left-0 z-30 flex flex-col w-64 bg-gray-800 text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-20 flex items-center justify-between px-4 border-b border-gray-700 flex-shrink-0">
           <h1 className="text-2xl font-bold text-white">PharmaERP</h1>
-          <button 
+          <button
             className="md:hidden text-gray-400 hover:text-white"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close sidebar"
