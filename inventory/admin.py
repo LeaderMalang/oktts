@@ -4,7 +4,7 @@ from .models import Product, Party, Batch, StockMovement
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'company', 'trade_price', 'retail_price', 'disable_sale_purchase')
+    list_display = ('name', 'company', 'rate', 'retail_price', 'stock', 'disable_sale_purchase')
     search_fields = ('name', 'barcode')
     list_filter = ('company', 'group', 'distributor')
 
@@ -16,7 +16,7 @@ class PartyAdmin(admin.ModelAdmin):
 
 @admin.register(Batch)
 class BatchAdmin(admin.ModelAdmin):
-    list_display = ('product', 'batch_number', 'expiry_date', 'quantity')
+    list_display = ('product', 'batch_number', 'expiry_date', 'stock', 'rate')
     list_filter = ('product', 'expiry_date')
     search_fields = ('batch_number', 'product__name')
 
