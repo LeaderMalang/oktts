@@ -46,25 +46,25 @@ class SaleInvoiceAdmin(admin.ModelAdmin):
 
     readonly_fields = ['total_amount', 'net_amount']
 
-    def save_model(self, request, obj, form, change):
-        is_new = self.pk is None
-        if is_new:
-            for item in self.items.all():
-                batch = Batch.objects.filter(product=item.product, quantity__gte=item.quantity).order_by('expiry_date').first()
-                if batch:
-                    batch.quantity -= item.quantity
-                    batch.save()
-                    StockMovement.objects.create(
-                        batch=batch,
-                        movement_type='OUT',
-                        quantity=item.quantity,
-                        reason=f"Sale Invoice {self.invoice_no}"
-                    )
+    # def save_model(self, request, obj, form, change):
+    #     is_new = self.pk is None
+    #     if is_new:
+    #         for item in self.items.all():
+    #             batch = Batch.objects.filter(product=item.product, quantity__gte=item.quantity).order_by('expiry_date').first()
+    #             if batch:
+    #                 batch.quantity -= item.quantity
+    #                 batch.save()
+    #                 StockMovement.objects.create(
+    #                     batch=batch,
+    #                     movement_type='OUT',
+    #                     quantity=item.quantity,
+    #                     reason=f"Sale Invoice {self.invoice_no}"
+    #                 )
         # Auto calculate totals
-        total = sum(item.quantity * item.rate for item in obj.items.all())
-        obj.total_amount = total
-        obj.net_amount = total - obj.discount
-        super().save_model(request, obj, form, change)
+        # total = sum(item.quantity * item.rate for item in obj.items.all())
+        # obj.total_amount = total
+        # obj.net_amount = total - obj.discount
+        # super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('customer', 'salesman', 'delivery_person')

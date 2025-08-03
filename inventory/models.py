@@ -57,11 +57,19 @@ class Party(models.Model):
     PARTY_TYPES = (
         ('customer', 'Customer'),
         ('supplier', 'Supplier'),
+         ('investor', 'Investor'),
     )
     name = models.CharField(max_length=255)
     address = models.TextField()
     phone = models.CharField(max_length=20)
     party_type = models.CharField(max_length=10, choices=PARTY_TYPES)
-
+    city = models.ForeignKey("setting.City", null=True, blank=True, on_delete=models.SET_NULL)
+    area = models.ForeignKey("setting.Area", null=True, blank=True, on_delete=models.SET_NULL)
+    proprietor = models.CharField(max_length=255, blank=True)
+    license_no = models.CharField(max_length=100, blank=True)
+    license_expiry = models.DateField(null=True, blank=True)
+    credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    chart_of_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True)
     def __str__(self):
         return f"{self.name} ({self.party_type})"

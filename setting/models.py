@@ -6,6 +6,12 @@ from django.db import models
 class City(models.Model):
     name = models.CharField(max_length=100)
 
+
+class Area(models.Model):
+    city_id = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
+    name = models.CharField(max_length=100)
+
+
 class Company(models.Model):
     name = models.CharField(max_length=100)
 
@@ -23,3 +29,5 @@ class Branch(models.Model):
 class Warehouse(models.Model):
     name = models.CharField(max_length=100)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    default_sales_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales_warehouse')
+    default_purchase_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='purchase_warehouse')

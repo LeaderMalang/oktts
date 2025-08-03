@@ -1,22 +1,17 @@
 from django.db import models
-from django.contrib.auth.models import User
+from user.models import User
 
 class Employee(models.Model):
-    ROLE_CHOICES = [
-        ('SALES', 'Salesperson'),
-        ('DELIVERY', 'Delivery Man'),
-        ('ADMIN', 'Admin Staff'),
-        ('MANAGER', 'Manager'),
-    ]
-
+   
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee')
     name = models.CharField(max_length=100)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    
     phone = models.CharField(max_length=15)
     email = models.EmailField(blank=True, null=True)
     cnic = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     active = models.BooleanField(default=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+  
 
     def __str__(self):
         return self.name

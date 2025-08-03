@@ -2,7 +2,8 @@ from django.db import models
 from inventory.models import Product,Party
 from setting.models import Warehouse
 from voucher.models import Voucher
-from inventory.models import Batch, StockMovement
+from utils.stock import stock_in,stock_return
+from utils.voucher import create_voucher_for_transaction
 # Create your models here.
 class PurchaseInvoice(models.Model):
     invoice_no = models.CharField(max_length=50, unique=True)
@@ -18,27 +19,39 @@ class PurchaseInvoice(models.Model):
         if is_new:
             for item in self.items.all():
                 # Create or update batch entry
-                batch = Batch.objects.create(
+                stock_in(
                     product=item.product,
-                    batch_number=f"PO-{self.invoice_no}",
-                    expiry_date=self.date,  # or actual expiry from form
-                    purchase_price=item.rate,
-                    sale_price=item.rate,  # can be updated later
-                    quantity=item.quantity
-                )
-                StockMovement.objects.create(
-                    batch=batch,
-                    movement_type='IN',
                     quantity=item.quantity,
+                    batch_number=item.batch_number,
+                    expiry_date=item.expiry_date,
+                    purchase_price=item.purchase_price,
+                    sale_price=item.sale_price,
                     reason=f"Purchase Invoice {self.invoice_no}"
                 )
+        if not self.voucher:
+
+            voucher = create_voucher_for_transaction(
+            voucher_type_code='PUR',
+            date=self.date,
+            amount=self.total_amount,
+            narration=f"Auto-voucher for Purchase Invoice {self.invoice_no}",
+            debit_account=self.warehouse.default_purchase_account,
+            credit_account=self.supplier.chart_of_account,
+            created_by=self.created_by if hasattr(self, 'created_by') else None,
+            branch=self.branch if hasattr(self, 'branch') else None,
+            )
+            self.voucher = voucher
+            self.save(update_fields=['voucher'])
 
 
 class PurchaseInvoiceItem(models.Model):
     invoice = models.ForeignKey(PurchaseInvoice, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    batch_number= models.CharField(max_length=50, unique=True)
+    expiry_date = models.DateField()
     quantity = models.PositiveIntegerField()
-    rate = models.DecimalField(max_digits=10, decimal_places=2)
+    purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
+    sale_price=models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
 class PurchaseReturn(models.Model):
@@ -54,21 +67,33 @@ class PurchaseReturn(models.Model):
 
         if is_new:
             for item in self.items.all():
-                batch = Batch.objects.filter(product=item.product, quantity__gte=item.quantity).order_by('-expiry_date').first()
-                if batch:
-                    batch.quantity -= item.quantity
-                    batch.save()
-                    StockMovement.objects.create(
-                        batch=batch,
-                        movement_type='OUT',
-                        quantity=item.quantity,
-                        reason=f"Purchase Return {self.return_no}"
-                    )
-
+                stock_return(
+                    product=item.product,
+                    quantity=item.quantity,
+                    batch_number=item.batch_number,
+                    reason=f"Sale Return {self.return_no}"
+                )
+        if not self.voucher:
+            voucher = create_voucher_for_transaction(
+            voucher_type_code='PRN',  # Purchase Return
+            date=self.date,
+            amount=self.total_amount,
+            narration=f"Auto-voucher for Purchase Return {self.return_no}",
+            debit_account=self.supplier.chart_of_account,  # refund to supplier
+            credit_account=self.warehouse.purchase_account,  # reduce purchase
+            created_by=getattr(self, 'created_by', None),
+            branch=getattr(self, 'branch', None)
+             )
+            self.voucher = voucher
+            self.save(update_fields=['voucher'])
+        
 
 class PurchaseReturnItem(models.Model):
     return_invoice = models.ForeignKey(PurchaseReturn, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    batch_number= models.CharField(max_length=50, unique=True)
+    expiry_date = models.DateField()
     quantity = models.PositiveIntegerField()
-    rate = models.DecimalField(max_digits=10, decimal_places=2)
+    purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
+    sale_price=models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2)

@@ -60,7 +60,7 @@ class VoucherAdmin(admin.ModelAdmin):
         if obj.status == 'APPROVED' and not obj.approved_by:
             obj.approved_by = request.user
         super().save_model(request, obj, form, change)
-        obj.amount = sum(entry.debit for entry in obj.voucherentry_set.all())
+        obj.amount = sum(entry.debit for entry in obj.entries.all())
         obj.save()
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.status == 'APPROVED':
