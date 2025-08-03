@@ -2,7 +2,7 @@ export type UserRole = 'SUPER_ADMIN' | 'CUSTOMER' | 'MANAGER' | 'SALES' | 'DELIV
 
 export interface User {
     id: number;
-    name: string;
+    username: string;
     email: string;
     password?: string; // Should not be stored in frontend state long-term
     role: UserRole;

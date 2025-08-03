@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, Page } from '../types';
-import { USERS } from '../constants';
+import { login } from '../services/auth';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -13,16 +13,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, setCurrentPage }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    // Mock authentication
-    const user = USERS.find(u => u.email === email && u.password === password);
-    
-    if (user) {
+    try {
+      const user = await login(email, password);
       onLogin(user);
-    } else {
+    } catch {
       setError('Invalid email or password.');
     }
   };
