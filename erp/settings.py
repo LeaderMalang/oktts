@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'user',
 
 
+
     'rest_framework',
 
     'crm',
@@ -69,6 +70,7 @@ INSTALLED_APPS = [
     'expense',
     'investor',
     'syncqueue',
+
 
 ]
 
