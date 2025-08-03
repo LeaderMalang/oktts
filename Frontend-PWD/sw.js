@@ -1,20 +1,33 @@
+
 const CACHE_NAME = 'pharma-erp-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
   '/favicon.svg',
   'https://cdn.tailwindcss.com'
+
 ];
 
 // --- Caching Strategy ---
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(async cache => {
+      try {
+        const manifestResp = await fetch(ASSET_MANIFEST_URL, { cache: 'no-store' });
+        const manifest = await manifestResp.json();
+        const assets = Object.values(manifest).flatMap(entry => {
+          const files = [`/${entry.file}`];
+          if (entry.css) files.push(...entry.css.map(f => `/${f}`));
+          if (entry.assets) files.push(...entry.assets.map(f => `/${f}`));
+          return files;
+        });
+        await cache.addAll([...CORE_ASSETS, ...assets]);
+      } catch (err) {
+        console.error('Asset precache failed', err);
+        await cache.addAll(CORE_ASSETS);
+      }
+    })
   );
 });
 
@@ -23,6 +36,7 @@ self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') {
         return;
     }
+
 
     const requestURL = new URL(event.request.url);
 
@@ -58,12 +72,12 @@ self.addEventListener('fetch', event => {
                 }
                 return fetchResponse;
             });
-        })
+
     );
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, CDN_CACHE];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
