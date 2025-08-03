@@ -1,6 +1,6 @@
 # inventory/admin.py
 from django.contrib import admin
-from .models import Product, Party, Batch, StockMovement
+from .models import Product, Party, Batch, StockMovement, PriceList, PriceListItem
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -25,3 +25,15 @@ class StockMovementAdmin(admin.ModelAdmin):
     list_display = ('batch', 'movement_type', 'quantity', 'timestamp', 'reason')
     list_filter = ('movement_type', 'timestamp')
     search_fields = ('batch__batch_number', 'reason')
+
+
+class PriceListItemInline(admin.TabularInline):
+    model = PriceListItem
+    extra = 1
+
+
+@admin.register(PriceList)
+class PriceListAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+    inlines = [PriceListItemInline]
