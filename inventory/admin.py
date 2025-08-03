@@ -10,8 +10,8 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Party)
 class PartyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'party_type', 'phone')
-    search_fields = ('name', 'phone')
+    list_display = ('name', 'party_type', 'phone', 'email', 'category', 'latitude', 'longitude', 'price_list')
+    search_fields = ('name', 'phone', 'email', 'category')
     list_filter = ('party_type',)
 
 @admin.register(Batch)
