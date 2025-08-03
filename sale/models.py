@@ -21,16 +21,12 @@ class SaleInvoice(models.Model):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     salesman = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
 
-    #delivery_person = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
-    investor = models.ForeignKey(
-        Party,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='investments',
-        limit_choices_to={'party_type': 'investor'},
-    )
+    
+    recoveries = models.ManyToManyField('hr.Employee', through='RecoveryLog', related_name='recovery_invoices', blank=True)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
 
+
+ 
 
     booking_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
     supplying_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplies')
@@ -43,6 +39,7 @@ class SaleInvoice(models.Model):
 
 
    
+
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     grand_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -147,12 +144,11 @@ class SaleReturnItem(models.Model):
 
 
 class RecoveryLog(models.Model):
-    invoice = models.ForeignKey(SaleInvoice, related_name='recovery_logs', on_delete=models.CASCADE)
-    recovered_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    date = models.DateField(auto_now_add=True)
-    note = models.TextField(blank=True)
+    invoice = models.ForeignKey(SaleInvoice, on_delete=models.CASCADE, related_name='recovery_logs')
+    employee = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='recovery_logs')
+    date = models.DateField()
+    notes = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.invoice.invoice_no} - {self.amount}"
+        return f"{self.invoice.invoice_no} - {self.date}"
 
