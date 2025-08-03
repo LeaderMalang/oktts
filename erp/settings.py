@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'hr',
     'setting',
     'inventory',
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
     'purchase',
     'report',
     'user',
+    'crm',
 ]
 
 MIDDLEWARE = [

@@ -1,4 +1,6 @@
 /db.sqlite3
-/env
-/*/migrations
-/*/__pycache__
+/env/
+*/migrations/
+__pycache__/
+*/__pycache__/
+*.py[cod]
