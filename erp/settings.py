@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'hr',
     'setting',
     'inventory',
@@ -61,13 +62,10 @@ INSTALLED_APPS = [
 
 
 
-    'rest_framework',
-
     'crm',
     'task',
     'notification',
     'pricing',
-    'expense',
     'investor',
     'syncqueue',
 

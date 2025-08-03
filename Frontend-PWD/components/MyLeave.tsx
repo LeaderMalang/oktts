@@ -80,7 +80,7 @@ const MyLeave: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             ...requestData,
             id: Math.max(0, ...leaveRequests.map(r => r.id)) + 1,
             employeeId: currentUser.id,
-            employeeName: currentUser.name,
+            employeeName: currentUser.username,
             status: 'PENDING'
         };
         setLeaveRequests(prev => [newRequest, ...prev]);
