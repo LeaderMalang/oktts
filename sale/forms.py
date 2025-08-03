@@ -12,19 +12,19 @@ class SaleInvoiceForm(forms.ModelForm):
             'customer',
             'warehouse',
             'salesman',
+
+            'booking_man_id',
+            'supplying_man_id',
+            'delivery_man_id',
             'city_id',
             'area_id',
-            'supplying_staff',
-            'booking_staff',
-            'delivery_staff',
+            'sub_total',
+            'tax',
+            'qr_code',
             'total_amount',
             'discount',
             'net_amount',
-            'tax',
-            'payment_method',
-            'payment_details',
-            'qr_code',
-            'status',
+
         )
 
 
