@@ -8,7 +8,7 @@ class City(models.Model):
 
 
 class Area(models.Model):
-    city_id = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
+    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=100)
 
 
