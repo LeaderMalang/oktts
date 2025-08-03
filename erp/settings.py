@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'purchase',
     'report',
     'user',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
