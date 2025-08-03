@@ -1,29 +1,33 @@
-const CACHE_NAME = 'pharma-erp-cache-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/App.tsx',
-  '/types.ts',
-  '/constants.tsx',
+const CACHE_VERSION = 'v1';
+const CACHE_NAME = `pharma-erp-cache-${CACHE_VERSION}`;
+const CDN_CACHE = `pharma-erp-cdn-${CACHE_VERSION}`;
+const ASSET_MANIFEST_URL = '/asset-manifest.json';
+const CORE_ASSETS = ['/', '/index.html'];
+const CDN_ORIGINS = [
   'https://cdn.tailwindcss.com',
-  "https://esm.sh/react-dom/",
-  "https://esm.sh/react/",
-  "https://esm.sh/react",
-  "https://esm.sh/@google/genai",
-  "https://esm.sh/recharts",
-  "https://esm.sh/qrcode.react"
+  'https://esm.sh'
 ];
 
 // --- Caching Strategy ---
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(async cache => {
+      try {
+        const manifestResp = await fetch(ASSET_MANIFEST_URL, { cache: 'no-store' });
+        const manifest = await manifestResp.json();
+        const assets = Object.values(manifest).flatMap(entry => {
+          const files = [`/${entry.file}`];
+          if (entry.css) files.push(...entry.css.map(f => `/${f}`));
+          if (entry.assets) files.push(...entry.assets.map(f => `/${f}`));
+          return files;
+        });
+        await cache.addAll([...CORE_ASSETS, ...assets]);
+      } catch (err) {
+        console.error('Asset precache failed', err);
+        await cache.addAll(CORE_ASSETS);
+      }
+    })
   );
 });
 
@@ -32,32 +36,44 @@ self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') {
         return;
     }
+    const url = new URL(event.request.url);
+    if (CDN_ORIGINS.some(origin => url.href.startsWith(origin))) {
+      event.respondWith(
+        caches.open(CDN_CACHE).then(cache =>
+          cache.match(event.request).then(resp => {
+            const fetchPromise = fetch(event.request).then(networkResp => {
+              if (networkResp && networkResp.status === 200) {
+                cache.put(event.request, networkResp.clone());
+              }
+              return networkResp;
+            });
+            return resp || fetchPromise;
+          })
+        )
+      );
+      return;
+    }
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                if (response) {
-                    return response; // Serve from cache
-                }
-                // Not in cache, fetch from network
-                return fetch(event.request).then(
-                    response => {
-                         if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
-                            return response;
-                        }
-                        const responseToCache = response.clone();
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                cache.put(event.request, responseToCache);
-                            });
-                        return response;
-                    }
-                );
-            })
+      caches.match(event.request).then(response => {
+        if (response) {
+          return response; // Serve from cache
+        }
+        return fetch(event.request).then(response => {
+          if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
+            return response;
+          }
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        });
+      })
     );
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, CDN_CACHE];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
