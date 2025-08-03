@@ -1,63 +1,83 @@
+
 const CACHE_NAME = 'pharma-erp-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/index.tsx',
-  '/App.tsx',
-  '/types.ts',
-  '/constants.tsx',
-  'https://cdn.tailwindcss.com',
-  "https://esm.sh/react-dom/",
-  "https://esm.sh/react/",
-  "https://esm.sh/react",
-  "https://esm.sh/@google/genai",
-  "https://esm.sh/recharts",
-  "https://esm.sh/qrcode.react"
+  '/favicon.svg',
+  'https://cdn.tailwindcss.com'
+
 ];
 
 // --- Caching Strategy ---
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(async cache => {
+      try {
+        const manifestResp = await fetch(ASSET_MANIFEST_URL, { cache: 'no-store' });
+        const manifest = await manifestResp.json();
+        const assets = Object.values(manifest).flatMap(entry => {
+          const files = [`/${entry.file}`];
+          if (entry.css) files.push(...entry.css.map(f => `/${f}`));
+          if (entry.assets) files.push(...entry.assets.map(f => `/${f}`));
+          return files;
+        });
+        await cache.addAll([...CORE_ASSETS, ...assets]);
+      } catch (err) {
+        console.error('Asset precache failed', err);
+        await cache.addAll(CORE_ASSETS);
+      }
+    })
   );
 });
 
 self.addEventListener('fetch', event => {
-    // We only want to cache GET requests.
+    // Only handle GET requests
     if (event.request.method !== 'GET') {
         return;
     }
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
+
+
+    const requestURL = new URL(event.request.url);
+
+    // Cache-first strategy for built assets
+    if (requestURL.origin === self.location.origin && requestURL.pathname.startsWith('/assets/')) {
+        event.respondWith(
+            caches.match(event.request).then(response => {
                 if (response) {
-                    return response; // Serve from cache
+                    return response;
                 }
-                // Not in cache, fetch from network
-                return fetch(event.request).then(
-                    response => {
-                         if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
-                            return response;
-                        }
-                        const responseToCache = response.clone();
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                cache.put(event.request, responseToCache);
-                            });
-                        return response;
+                return fetch(event.request).then(fetchResponse => {
+                    if (fetchResponse && fetchResponse.status === 200) {
+                        const responseClone = fetchResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
                     }
-                );
+                    return fetchResponse;
+                });
             })
+        );
+        return;
+    }
+
+    // Generic cache-first strategy
+    event.respondWith(
+        caches.match(event.request).then(response => {
+            if (response) {
+                return response;
+            }
+            return fetch(event.request).then(fetchResponse => {
+                if (fetchResponse && fetchResponse.status === 200 && (fetchResponse.type === 'basic' || fetchResponse.type === 'cors')) {
+                    const responseToCache = fetchResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+                }
+                return fetchResponse;
+            });
+
     );
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, CDN_CACHE];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
