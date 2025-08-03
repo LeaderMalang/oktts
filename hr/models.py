@@ -5,37 +5,35 @@ from user.models import User
 
 
 class EmployeeRole(models.TextChoices):
-    SUPER_ADMIN = "SUPER_ADMIN", "Super Admin"
-    CUSTOMER = "CUSTOMER", "Customer"
+
+
     MANAGER = "MANAGER", "Manager"
     SALES = "SALES", "Sales"
     DELIVERY = "DELIVERY", "Delivery"
     WAREHOUSE_ADMIN = "WAREHOUSE_ADMIN", "Warehouse Admin"
     DELIVERY_MANAGER = "DELIVERY_MANAGER", "Delivery Manager"
     RECOVERY_OFFICER = "RECOVERY_OFFICER", "Recovery Officer"
-    INVESTOR = "INVESTOR", "Investor"
-    SUPPLIER = "supplier", "Supplier"
+
+
+
 
 class Employee(models.Model):
 
     user = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="employee",
-    )
-    role = models.CharField(
-        max_length=30, choices=EmployeeRole.choices, blank=True, null=True
+
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="employee"
     )
     name = models.CharField(max_length=100)
+    role = models.CharField(
+        max_length=30, choices=EmployeeRole.choices, default=EmployeeRole.SALES
+    )
+
 
     phone = models.CharField(max_length=15)
     email = models.EmailField(blank=True, null=True)
     cnic = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     active = models.BooleanField(default=True)
-  
 
     def __str__(self):
         return self.name
@@ -91,7 +89,11 @@ class SalesTarget(models.Model):
 
 
 class DeliveryAssignment(models.Model):
-    employee = models.ForeignKey(Employee, limit_choices_to={'role': 'DELIVERY'}, on_delete=models.CASCADE)
+    employee = models.ForeignKey(
+        Employee,
+        limit_choices_to={"role": EmployeeRole.DELIVERY},
+        on_delete=models.CASCADE,
+    )
     sale = models.ForeignKey('sale.SaleInvoice', on_delete=models.CASCADE)
     assigned_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[
