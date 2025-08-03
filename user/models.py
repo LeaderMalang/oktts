@@ -13,7 +13,6 @@ class User(AbstractUser):
         ('DELIVERY_MANAGER','Delivery Manager'),
         ('RECOVERY_OFFICER','Recovery Officer'),
         ('INVESTOR','Investor'),
-        ('supplier', 'Supplier'),
     )
     role = models.CharField(max_length=30, choices=ROLES, default='CUSTOMER')
 
