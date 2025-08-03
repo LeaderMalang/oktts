@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import PurchaseInvoice, PurchaseInvoiceItem, PurchaseReturn, PurchaseReturnItem
+from .models import (
+    PurchaseInvoice,
+    PurchaseInvoiceItem,
+    PurchaseReturn,
+    PurchaseReturnItem,
+    InvestorTransaction,
+)
 
 class PurchaseInvoiceItemInline(admin.TabularInline):
     model = PurchaseInvoiceItem
@@ -33,3 +39,12 @@ class PurchaseReturnAdmin(admin.ModelAdmin):
 
 admin.site.register(PurchaseInvoice, PurchaseInvoiceAdmin)
 admin.site.register(PurchaseReturn, PurchaseReturnAdmin)
+
+
+class InvestorTransactionAdmin(admin.ModelAdmin):
+    list_display = ("investor", "transaction_type", "amount", "date", "purchase_invoice")
+    list_filter = ("transaction_type", "date")
+    search_fields = ("investor__name", "notes")
+
+
+admin.site.register(InvestorTransaction, InvestorTransactionAdmin)
