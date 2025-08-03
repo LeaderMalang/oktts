@@ -1,10 +1,12 @@
 from rest_framework import serializers
+
 from .models import SaleInvoice, SaleInvoiceItem
 
 
 class SaleInvoiceItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SaleInvoiceItem
+
         fields = [
             'id', 'product', 'batch', 'quantity', 'bonus', 'rate',
             'discount', 'amount', 'net_amount'
@@ -23,9 +25,11 @@ class SaleInvoiceItemSerializer(serializers.ModelSerializer):
 class SaleInvoiceSerializer(serializers.ModelSerializer):
     items = SaleInvoiceItemSerializer(many=True)
 
+
     class Meta:
         model = SaleInvoice
         fields = [
+
             'id', 'invoice_no', 'date', 'customer', 'warehouse',
             'salesman', 'delivery_person', 'discount', 'total_amount',
             'net_amount', 'items'
@@ -51,3 +55,4 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             SaleInvoiceItem.objects.create(invoice=instance, **item_data)
         instance.update_totals()
         return instance
+

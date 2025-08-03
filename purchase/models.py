@@ -1,15 +1,22 @@
 from django.db import models
-from inventory.models import Product,Party
+from inventory.models import Product, Party
 from setting.models import Warehouse
 from voucher.models import Voucher
-from utils.stock import stock_in,stock_return
+from utils.stock import stock_in, stock_return
 from utils.voucher import create_voucher_for_transaction
-# Create your models here.
+
+
 class PurchaseInvoice(models.Model):
     invoice_no = models.CharField(max_length=50, unique=True)
+    company_invoice_number = models.CharField(max_length=50, null=True, blank=True)
     date = models.DateField()
-    supplier = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'supplier'})
+    supplier = models.ForeignKey(
+        Party,
+        on_delete=models.CASCADE,
+        limit_choices_to={"party_type": "supplier"},
+    )
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
     def update_totals(self):
@@ -19,6 +26,21 @@ class PurchaseInvoice(models.Model):
         if self.voucher:
             self.voucher.amount = total
             self.voucher.save(update_fields=["amount"])
+
+    #total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    grand_total = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=(("Cash", "Cash"), ("Credit", "Credit")),
+        default="Cash",
+    )
+    paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, default="Pending")
+    #voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
@@ -26,7 +48,6 @@ class PurchaseInvoice(models.Model):
 
         if is_new:
             for item in self.items.all():
-                # Create or update batch entry
                 stock_in(
                     product=item.product,
                     quantity=item.quantity,
@@ -34,11 +55,12 @@ class PurchaseInvoice(models.Model):
                     expiry_date=item.expiry_date,
                     purchase_price=item.purchase_price,
                     sale_price=item.sale_price,
-                    reason=f"Purchase Invoice {self.invoice_no}"
+                    reason=f"Purchase Invoice {self.invoice_no}",
                 )
-        if not self.voucher:
 
+        if not self.voucher:
             voucher = create_voucher_for_transaction(
+
                 voucher_type_code='PUR',
                 date=self.date,
                 amount=self.total_amount,
@@ -52,14 +74,18 @@ class PurchaseInvoice(models.Model):
             super().save(update_fields=['voucher'])
 
 
+
 class PurchaseInvoiceItem(models.Model):
-    invoice = models.ForeignKey(PurchaseInvoice, related_name='items', on_delete=models.CASCADE)
+    invoice = models.ForeignKey(
+        PurchaseInvoice, related_name="items", on_delete=models.CASCADE
+    )
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    batch_number= models.CharField(max_length=50, unique=True)
+    batch_number = models.CharField(max_length=50, unique=True)
     expiry_date = models.DateField()
     quantity = models.PositiveIntegerField()
     bonus = models.PositiveIntegerField(default=0)
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
+
     sale_price=models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -70,6 +96,7 @@ class PurchaseInvoiceItem(models.Model):
         self.net_amount = self.amount - self.discount
         super().save(*args, **kwargs)
         self.invoice.update_totals()
+
 
 class PurchaseReturn(models.Model):
     return_no = models.CharField(max_length=50, unique=True)
