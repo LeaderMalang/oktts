@@ -55,3 +55,11 @@ SaleInvoiceItemForm = inlineformset_factory(
 )
 
 
+
+SaleInvoiceItemForm = inlineformset_factory(
+    SaleInvoice,
+    SaleInvoiceItem,
+    fields=('product', 'quantity', 'bonus', 'rate', 'discount'),
+    extra=1,
+    can_delete=True,
+)

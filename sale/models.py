@@ -44,22 +44,31 @@ class SaleInvoice(models.Model):
 
    
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    grand_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    net_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    net_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+    payment_method = models.CharField(max_length=20, choices=(("Cash","Cash"),("Credit","Credit")))
+    status = models.CharField(max_length=20, default="Pending")
 
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
-
+    def update_totals(self):
+        """Recalculate invoice totals based on related items."""
+        total = sum(item.amount for item in self.items.all())
+        net = total - self.discount
+        self.total_amount = total
+        self.net_amount = net
+        type(self).objects.filter(pk=self.pk).update(
+            total_amount=total, net_amount=net
+        )
+        if self.voucher:
+            self.voucher.amount = net
+            self.voucher.save(update_fields=["amount"])
 
     def save(self, *args, **kwargs):
         self.grand_total = self.total_amount - self.discount + self.tax
         self.net_amount = self.grand_total
         is_new = self.pk is None
         super().save(*args, **kwargs)
+        self.update_totals()
 
         if is_new:
             for item in self.items.all():
@@ -73,7 +82,9 @@ class SaleInvoice(models.Model):
             voucher = create_voucher_for_transaction(
                 voucher_type_code='SAL',
                 date=self.date,
-                amount=self.grand_total,
+
+                amount=self.net_amount,
+
                 narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
                 debit_account=self.customer.chart_of_account,  # customer owes us
                 credit_account=self.warehouse.default_sales_account,   # record sale revenue
@@ -92,12 +103,19 @@ class SaleInvoiceItem(models.Model):
     batch = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.SET_NULL)
     quantity = models.PositiveIntegerField()
     bonus = models.PositiveIntegerField(default=0)
+
     packing = models.PositiveIntegerField(default=0)
+
     rate = models.DecimalField(max_digits=10, decimal_places=2)
-    discount1 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    discount2 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    net_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        self.amount = self.quantity * self.rate
+        self.net_amount = self.amount - self.discount
+        super().save(*args, **kwargs)
+        self.invoice.update_totals()
 
 class SaleReturn(models.Model):
     return_no = models.CharField(max_length=50, unique=True)
