@@ -1,4 +1,11 @@
 /db.sqlite3
 /env
 /*/migrations
-/*/__pycache__
+!crm/migrations
+!task/migrations
+!notification/migrations
+!pricing/migrations
+!expense/migrations
+!investor/migrations
+!syncqueue/migrations
+**/__pycache__/
