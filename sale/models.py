@@ -1,6 +1,8 @@
 from django.db import models
+
 from setting.models import Warehouse
 from inventory.models import StockMovement, Party, Product, Batch
+
 from voucher.models import Voucher
 from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
@@ -12,6 +14,7 @@ class SaleInvoice(models.Model):
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     salesman = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
+
     booking_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
     supplying_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplies')
     delivery_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
@@ -20,11 +23,15 @@ class SaleInvoice(models.Model):
     sub_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     qr_code = models.CharField(max_length=255, blank=True)
+
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
-    payment_method = models.CharField(max_length=20, choices=(("Cash","Cash"),("Credit","Credit")))
+    payment_method = models.CharField(max_length=20, choices=(("Cash", "Cash"), ("Credit", "Credit")))
+    payment_details = models.JSONField(null=True, blank=True)
+    qr_code = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=20, default="Pending")
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -34,7 +41,7 @@ class SaleInvoice(models.Model):
             for item in self.items.all():
                 stock_out(
                     product=item.product,
-                    quantity=item.quantity,
+                    quantity=item.quantity + item.bonus,
                     reason=f"Sale Invoice {self.invoice_no}"
                 )
         
@@ -42,7 +49,7 @@ class SaleInvoice(models.Model):
             voucher = create_voucher_for_transaction(
             voucher_type_code='SAL',
             date=self.date,
-            amount=self.net_amount,
+            amount=self.net_amount + self.tax,
             narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
             debit_account=self.customer.chart_of_account,  # customer owes us
             credit_account=self.warehouse.default_sales_account,   # record sale revenue
@@ -59,6 +66,8 @@ class SaleInvoiceItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     batch = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.SET_NULL)
     quantity = models.PositiveIntegerField()
+    bonus = models.PositiveIntegerField(default=0)
+    packing = models.PositiveIntegerField(default=0)
     rate = models.DecimalField(max_digits=10, decimal_places=2)
     discount1 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount2 = models.DecimalField(max_digits=5, decimal_places=2, default=0)

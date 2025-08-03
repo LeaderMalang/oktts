@@ -1,6 +1,6 @@
 from django import forms
 from django.forms.models import inlineformset_factory
-from .models import SaleInvoice,SaleInvoiceItem
+from .models import SaleInvoice, SaleInvoiceItem
 
 
 class SaleInvoiceForm(forms.ModelForm):
@@ -12,6 +12,7 @@ class SaleInvoiceForm(forms.ModelForm):
             'customer',
             'warehouse',
             'salesman',
+
             'booking_man_id',
             'supplying_man_id',
             'delivery_man_id',
@@ -23,9 +24,26 @@ class SaleInvoiceForm(forms.ModelForm):
             'total_amount',
             'discount',
             'net_amount',
+
         )
 
 
+SaleInvoiceItemForm = inlineformset_factory(
+    SaleInvoice,
+    SaleInvoiceItem,
+    fields=(
+        'product',
+        'batch',
+        'quantity',
+        'bonus',
+        'packing',
+        'rate',
+        'discount1',
+        'discount2',
+        'amount',
+        'net_amount',
+    ),
+    extra=1,
+    can_delete=True,
+)
 
-
-SaleInvoiceItemForm=inlineformset_factory(SaleInvoice,SaleInvoiceItem,fields=('product', 'quantity','rate','amount',), extra=1,can_delete=True)

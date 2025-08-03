@@ -44,8 +44,10 @@ print_invoice_pdf.short_description = "Print Invoice PDF"
 
 @admin.register(SaleInvoice)
 class SaleInvoiceAdmin(admin.ModelAdmin):
+
     list_display = ['invoice_no', 'date', 'customer', 'warehouse', 'sub_total', 'tax', 'total_amount', 'net_amount']
     list_filter = ['date', 'warehouse', 'salesman', 'booking_man_id', 'supplying_man_id', 'delivery_man_id', 'city_id', 'area_id']
+
     search_fields = ['invoice_no', 'customer__name']
     inlines = [SaleInvoiceItemInline]
     actions = [print_invoice_pdf]
@@ -73,6 +75,7 @@ class SaleInvoiceAdmin(admin.ModelAdmin):
         # super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
+
         return (
             super()
             .get_queryset(request)
@@ -86,6 +89,7 @@ class SaleInvoiceAdmin(admin.ModelAdmin):
                 'area_id',
             )
         )
+
 
 # --- SaleReturn Admin ---
 
