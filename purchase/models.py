@@ -118,3 +118,31 @@ class PurchaseReturnItem(models.Model):
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
     sale_price=models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+
+
+class InvestorTransaction(models.Model):
+    """Records cash movement related to an investor."""
+
+    TRANSACTION_TYPES = (
+        ("investment", "Investment"),
+        ("payout", "Payout"),
+        ("profit", "Profit"),
+    )
+
+    investor = models.ForeignKey(
+        Party,
+        on_delete=models.CASCADE,
+        limit_choices_to={"party_type": "investor"},
+    )
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    notes = models.TextField(blank=True)
+    purchase_invoice = models.ForeignKey(
+        PurchaseInvoice, on_delete=models.SET_NULL, null=True, blank=True, related_name="investor_transactions"
+    )
+
+    def __str__(self) -> str:  # pragma: no cover - display helper
+        return f"{self.investor} - {self.transaction_type} - {self.amount}"
+
