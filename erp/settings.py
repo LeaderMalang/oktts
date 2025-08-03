@@ -55,8 +55,10 @@ INSTALLED_APPS = [
     'voucher',
     'sale',
     'purchase',
+    'expense',
     'report',
     'user',
+
 
     'rest_framework',
 
