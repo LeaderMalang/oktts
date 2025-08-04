@@ -72,7 +72,7 @@ self.addEventListener('fetch', event => {
                 }
                 return fetchResponse;
             });
-
+        })
     );
 });
 

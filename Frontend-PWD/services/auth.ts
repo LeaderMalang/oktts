@@ -2,12 +2,12 @@ import { User } from '../types';
 
 const TOKEN_KEY = 'authToken';
 const USER_KEY = 'currentUser';
-
-export async function login(email: string, password: string): Promise<User> {
-  const response = await fetch('/api/user/auth/login/', {
+const baseUrl = 'http://127.0.0.1:8000';
+export async function login(username: string, password: string): Promise<User> {
+  const response = await fetch(`${baseUrl}/api/user/auth/login/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: email, password }),
+    body: JSON.stringify({ username: username, password }),
   });
 
   if (!response.ok) {
