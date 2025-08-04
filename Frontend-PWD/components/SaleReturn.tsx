@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SaleReturn, SaleReturnItem } from '../types';
 import { PARTIES_DATA, PRODUCTS, ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
-import { addToSyncQueue, registerSync } from '../services/db';
+import { createSaleReturn } from '../services/sale';
 
 interface SaleReturnProps {
   returnToEdit: SaleReturn | null;
@@ -16,10 +16,10 @@ const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({...pr
 const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }) => {
   const [sReturn, setSReturn] = useState<Omit<SaleReturn, 'customer' | 'id'>>({
     returnNo: `SRN-${Math.floor(Math.random() * 10000)}`,
-    status: 'Draft',
+    warehouseId: null,
     date: new Date().toISOString().split('T')[0],
     items: [],
-    grandTotal: 0,
+    totalAmount: 0,
   });
   const [customerId, setCustomerId] = useState<number | null>(null);
 
@@ -34,12 +34,12 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
   }, [returnToEdit, isEditMode]);
 
   useEffect(() => {
-    const grandTotal = sReturn.items.reduce((acc, item) => acc + item.amount, 0);
-    setSReturn(prev => ({ ...prev, grandTotal }));
+    const totalAmount = sReturn.items.reduce((acc, item) => acc + item.amount, 0);
+    setSReturn(prev => ({ ...prev, totalAmount }));
   }, [sReturn.items]);
 
   const handleAddItem = () => {
-    const newItem: SaleReturnItem = { id: Date.now().toString(), productId: null, batchNo: '', quantity: 1, rate: 0, amount: 0, };
+    const newItem: SaleReturnItem = { id: Date.now().toString(), productId: null, batchNo: '', expiryDate: '', quantity: 1, rate: 0, discount1: 0, discount2: 0, amount: 0, netAmount: 0 };
     setSReturn(prev => ({ ...prev, items: [...prev.items, newItem] }));
   };
   
@@ -54,6 +54,7 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
             updatedItem.rate = product ? product.tradePrice : 0;
         }
         updatedItem.amount = updatedItem.quantity * updatedItem.rate;
+        updatedItem.netAmount = updatedItem.amount;
         return updatedItem;
       }
       return item;
@@ -62,17 +63,13 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
   };
   
   const handleSubmit = async () => {
-    const finalReturn: SaleReturn = { 
+    const finalReturn: SaleReturn = {
         id: isEditMode ? returnToEdit.id : new Date().getTime().toString(),
-        ...sReturn, 
-        customer: PARTIES_DATA.find(p => p.id === customerId) || null 
+        ...sReturn,
+        customer: PARTIES_DATA.find(p => p.id === customerId) || null
     };
-    
-    const endpoint = isEditMode ? `/api/sale-returns/${finalReturn.id}` : '/api/sale-returns';
-    const method = isEditMode ? 'PUT' : 'POST';
-    
-    await addToSyncQueue({ endpoint, method, payload: finalReturn });
-    await registerSync();
+
+    await createSaleReturn(finalReturn);
     handleClose();
   };
   
@@ -122,8 +119,8 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
             <div className="w-full max-w-sm space-y-3">
                 <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
                 <div className="flex justify-between text-lg font-bold">
-                    <span className="text-gray-900 dark:text-white">Grand Total:</span>
-                    <span className="text-blue-600 dark:text-blue-400">Rs. {sReturn.grandTotal.toFixed(2)}</span>
+                    <span className="text-gray-900 dark:text-white">Total Amount:</span>
+                    <span className="text-blue-600 dark:text-blue-400">Rs. {sReturn.totalAmount.toFixed(2)}</span>
                 </div>
             </div>
         </div>

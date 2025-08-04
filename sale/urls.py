@@ -1,9 +1,26 @@
 from django.urls import path
-from . import views
+from rest_framework.routers import DefaultRouter
 
-urlpatterns = [
-    path('', views.sale_invoice_list, name='sale_list'),
-    path('create/', views.sale_invoice_create, name='sale_create'),
-    path('<int:pk>/edit/', views.sale_invoice_edit, name='sale_edit'),
-    path('<int:pk>/', views.sale_invoice_detail, name='sale_detail'),
+from .views import (
+    sale_invoice_list,
+    sale_invoice_create,
+    sale_invoice_edit,
+    sale_invoice_detail,
+    SaleInvoiceViewSet,
+    SaleReturnViewSet,
+    SaleReturnItemViewSet,
+    RecoveryLogViewSet,
+)
+
+router = DefaultRouter()
+router.register(r'invoices', SaleInvoiceViewSet)
+router.register(r'returns', SaleReturnViewSet)
+router.register(r'return-items', SaleReturnItemViewSet)
+router.register(r'recovery-logs', RecoveryLogViewSet)
+
+urlpatterns = router.urls + [
+    path('', sale_invoice_list, name='sale_list'),
+    path('create/', sale_invoice_create, name='sale_create'),
+    path('<int:pk>/edit/', sale_invoice_edit, name='sale_edit'),
+    path('<int:pk>/', sale_invoice_detail, name='sale_detail'),
 ]

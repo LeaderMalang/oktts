@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Order, OrderStatus } from '../types';
-import { ORDERS } from '../constants';
+import { listSaleInvoices } from '../services/sale';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 
@@ -26,10 +26,15 @@ const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
 
 
 const OrderManagement: React.FC<OrderManagementProps> = ({ viewOrderDetails, handleEditSaleInvoice }) => {
+    const [orders, setOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    useEffect(() => {
+        listSaleInvoices().then(setOrders).catch(() => setOrders([]));
+    }, []);
 
     const resetFilters = () => {
         setSearchTerm('');
@@ -39,7 +44,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ viewOrderDetails, han
     };
     
     const filteredOrders = useMemo(() => {
-        return ORDERS.filter(order => {
+        return orders.filter(order => {
             const searchLower = searchTerm.toLowerCase();
             const matchesSearch = searchTerm === '' ||
                 order.invoiceNo.toLowerCase().includes(searchLower) ||

@@ -172,7 +172,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
       id: new Date().getTime().toString(),
       productId: null,
       batchId: null,
-      packing: '',
+      packing: 0,
       quantity: 1,
       bonus: 0,
       rate: 0,
@@ -314,7 +314,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
                                 <td className="p-1" style={{minWidth: '150px'}}><SearchableSelect options={(availableBatches.get(item.productId || 0) || []).map(b => ({ value: b.id, label: b.batchNo }))} value={item.batchId} onChange={val => handleItemChange(item.id, 'batchId', val)} disabled={!item.productId} /></td>
                                 <td className="p-1 text-sm text-gray-500 dark:text-gray-400" style={{minWidth: '110px'}}>{selectedBatch?.expiryDate || '-'}</td>
                                 <td className="p-1 text-sm text-gray-500 dark:text-gray-400">{selectedBatch?.stock || '-'}</td>
-                                <td className="p-1" style={{minWidth: '100px'}}><FormInput type="text" value={item.packing || ''} onChange={(e) => handleItemChange(item.id, 'packing', e.target.value)} placeholder="e.g. 10x10" /></td>
+                                <td className="p-1" style={{minWidth: '100px'}}><FormInput type="number" value={item.packing || 0} onChange={(e) => handleItemChange(item.id, 'packing', parseInt(e.target.value))} /></td>
                                 <td className="p-1" style={{minWidth: '80px'}}><FormInput type="number" value={item.quantity} onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value) || 0)} min="1" /></td>
                                 <td className="p-1" style={{minWidth: '80px'}}><FormInput type="number" value={item.bonus} onChange={(e) => handleItemChange(item.id, 'bonus', parseInt(e.target.value) || 0)} min="0" /></td>
                                 <td className="p-1 text-sm text-gray-500 dark:text-gray-400">{item.rate.toFixed(2)}</td>

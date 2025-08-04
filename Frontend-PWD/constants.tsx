@@ -210,18 +210,18 @@ export const PURCHASE_INVOICES: PurchaseInvoice[] = [
 
 
 export const ORDERS: Order[] = [
-    { id: '1', invoiceNo: 'INV-2024-001', userId: 101, cityId: 1, areaId: 1, customer: PARTIES_DATA[0], date: '2024-07-28', grandTotal: 2340.50, status: 'Delivered', items: [], subTotal: 2127.73, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyName: 'PharmaCo', qrCode: 'ORD-1-101-TS20240728', paymentMethod: 'Credit', paidAmount: 2000, recoveryLogs: [
-        {id: 1, date: '2024-08-01T10:00:00Z', notes: 'Called customer, payment promised by EOD.', employeeId: 203}
+    { id: '1', invoiceNo: 'INV-2024-001', customerId: 101, cityId: 1, areaId: 1, customer: PARTIES_DATA[0], date: '2024-07-28', grandTotal: 2340.50, status: 'Delivered', items: [], subTotal: 2127.73, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyInvoiceNumber: 'PharmaCo', qrCode: 'ORD-1-101-TS20240728', paymentMethod: 'Credit', paidAmount: 2000, recoveryLogs: [
+        {id: 1, invoiceId: 1, date: '2024-08-01T10:00:00Z', notes: 'Called customer, payment promised by EOD.', employeeId: 203}
     ] },
-    { id: '2', invoiceNo: 'INV-2024-002', userId: 102, cityId: 1, areaId: 2, customer: PARTIES_DATA[1], date: '2024-07-27', grandTotal: 880.00, status: 'Dispatched', items: [], subTotal: 800, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyName: 'PharmaCo', qrCode: 'ORD-2-102-TS20240727', paymentMethod: 'Credit', paidAmount: 0, recoveryLogs: [] },
-    { id: '3', invoiceNo: 'INV-2024-003', userId: 101, cityId: 2, areaId: 4, customer: PARTIES_DATA[0], date: '2024-07-26', grandTotal: 1560.75, status: 'Processing', items: [], subTotal: 1418.86, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyName: 'MedLife', qrCode: 'ORD-3-101-TS20240726', paymentMethod: 'Credit', paidAmount: 0, recoveryLogs: [] },
-    { id: '4', invoiceNo: 'INV-2024-004', userId: 102, cityId: 2, areaId: 5, customer: PARTIES_DATA[1], date: '2024-07-25', grandTotal: 540.00, status: 'Approved', items: [], subTotal: 490.91, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyName: 'MedLife', qrCode: 'ORD-4-102-TS20240725', paymentMethod: 'Cash', paidAmount: 540.00 },
-    { id: '5', invoiceNo: 'INV-2024-005', userId: 101, cityId: 3, areaId: 6, customer: PARTIES_DATA[0], date: '2024-07-29', grandTotal: 3150.00, status: 'Pending Approval', items: [], subTotal: 2863.64, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyName: 'PharmaCo', qrCode: null, paymentMethod: 'Credit', paidAmount: 0, recoveryLogs: [] }
+    { id: '2', invoiceNo: 'INV-2024-002', customerId: 102, cityId: 1, areaId: 2, customer: PARTIES_DATA[1], date: '2024-07-27', grandTotal: 880.00, status: 'Dispatched', items: [], subTotal: 800, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyInvoiceNumber: 'PharmaCo', qrCode: 'ORD-2-102-TS20240727', paymentMethod: 'Credit', paidAmount: 0, recoveryLogs: [] },
+    { id: '3', invoiceNo: 'INV-2024-003', customerId: 101, cityId: 2, areaId: 4, customer: PARTIES_DATA[0], date: '2024-07-26', grandTotal: 1560.75, status: 'Processing', items: [], subTotal: 1418.86, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyInvoiceNumber: 'MedLife', qrCode: 'ORD-3-101-TS20240726', paymentMethod: 'Credit', paidAmount: 0, recoveryLogs: [] },
+    { id: '4', invoiceNo: 'INV-2024-004', customerId: 102, cityId: 2, areaId: 5, customer: PARTIES_DATA[1], date: '2024-07-25', grandTotal: 540.00, status: 'Approved', items: [], subTotal: 490.91, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyInvoiceNumber: 'MedLife', qrCode: 'ORD-4-102-TS20240725', paymentMethod: 'Cash', paidAmount: 540.00, recoveryLogs: [] },
+    { id: '5', invoiceNo: 'INV-2024-005', customerId: 101, cityId: 3, areaId: 6, customer: PARTIES_DATA[0], date: '2024-07-29', grandTotal: 3150.00, status: 'Pending Approval', items: [], subTotal: 2863.64, discount: 0, tax: 10, supplyingManId: 2, bookingManId: 2, companyInvoiceNumber: 'PharmaCo', qrCode: null, paymentMethod: 'Credit', paidAmount: 0, recoveryLogs: [] }
 ];
 
 export const SALE_RETURNS: SaleReturn[] = [
-    { id: 'sr-1', returnNo: 'SRN-2024-001', customer: PARTIES_DATA[0], date: '2024-07-29', grandTotal: 210.00, status: 'Returned', items: [] },
-    { id: 'sr-2', returnNo: 'SRN-2024-002', customer: PARTIES_DATA[1], date: '2024-07-28', grandTotal: 150.75, status: 'Pending', items: [] }
+    { id: 'sr-1', returnNo: 'SRN-2024-001', customer: PARTIES_DATA[0], warehouseId: 1, date: '2024-07-29', totalAmount: 210.00, items: [] },
+    { id: 'sr-2', returnNo: 'SRN-2024-002', customer: PARTIES_DATA[1], warehouseId: 1, date: '2024-07-28', totalAmount: 150.75, items: [] }
 ];
 
 export const PURCHASE_RETURNS: PurchaseReturn[] = [

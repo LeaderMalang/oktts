@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Party, Product, InvoiceItem, Area, Task, PriceListItem, Order } from '../types';
 import { PARTIES_DATA, PRODUCTS, ICONS, CITIES, AREAS, EMPLOYEES, PRICE_LISTS, PRICE_LIST_ITEMS, BATCHES } from '../constants';
 import SearchableSelect from './SearchableSelect';
-import { addToSyncQueue, registerSync } from '../services/db';
+import { createSaleInvoice } from '../services/sale';
 
 const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
     <input {...props} className="block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-center" />
@@ -71,6 +71,7 @@ const POS: React.FC = () => {
             id: new Date().getTime().toString(),
             productId: product.id,
             batchId: null,
+            packing: 0,
             quantity: 1,
             bonus: 0,
             rate,
@@ -118,21 +119,27 @@ const POS: React.FC = () => {
         if (!customerId && paymentMethod === 'Credit') { return alert("Please select a customer for credit sales."); }
 
         const saleData: Partial<Order> = {
-            id: new Date().getTime().toString(),
             invoiceNo: `POS-${Date.now()}`,
             status: 'Delivered',
-            userId: customerId || -1, // -1 for walk-in
             customer: PARTIES_DATA.find(p => p.id === customerId) || null,
-            cityId, areaId,
-            companyName: 'Default Company',
+            customerId: customerId || null,
+            cityId,
+            areaId,
+            supplyingManId: null,
+            bookingManId: null,
+            deliveryManId: null,
             date: new Date().toISOString().split('T')[0],
             items: cart,
-            subTotal: grandTotal, discount: 0, tax: 0, grandTotal,
-            qrCode: null, paymentMethod,
+            subTotal: grandTotal,
+            discount: 0,
+            tax: 0,
+            grandTotal: grandTotal,
+            netAmount: grandTotal,
+            qrCode: null,
+            paymentMethod,
             paidAmount: isPaid ? grandTotal : paidAmount,
         };
-        await addToSyncQueue({ endpoint: '/api/pos', method: 'POST', payload: saleData });
-        await registerSync();
+        await createSaleInvoice(saleData);
         clearCart();
     };
     
