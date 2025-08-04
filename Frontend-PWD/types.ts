@@ -101,9 +101,10 @@ export interface PurchaseInvoiceItem {
     expiryDate: string;
     quantity: number;
     bonus: number;
-    rate: number;
+    purchasePrice: number;
+    salePrice: number;
     discount: number; // percentage
-    amount: number; // qty * rate
+    amount: number; // qty * purchasePrice
     netAmount: number; // amount after discount
 }
 
@@ -145,10 +146,11 @@ export interface PurchaseInvoice {
   invoiceNo: string;
   status: InvoiceStatus;
   supplier: Supplier | null;
+  warehouseId?: number;
   date: string;
   companyInvoiceNumber: string;
   items: PurchaseInvoiceItem[];
-  subTotal: number;
+  totalAmount: number;
   discount: number; // As a percentage for the whole invoice
   tax: number; // As a percentage
   grandTotal: number;
@@ -181,19 +183,22 @@ export interface PurchaseReturnItem {
     id: string; // temp client-side ID
     productId: number | null;
     batchNo: string;
+    expiryDate: string;
     quantity: number;
-    rate: number;
+    purchasePrice: number;
+    salePrice: number;
     amount: number;
 }
 
 export interface PurchaseReturn {
     id: string;
     returnNo: string;
-    status: InvoiceStatus;
     supplier: Supplier | null;
+    warehouseId?: number;
     date: string;
     items: PurchaseReturnItem[];
-    grandTotal: number;
+    totalAmount: number;
+    status?: InvoiceStatus;
 }
 
 
@@ -412,16 +417,16 @@ export interface Task {
 }
 
 // Investor Module Types
-export type InvestorTransactionType = 'INVESTMENT' | 'PAYOUT' | 'PROFIT_SHARE';
+export type InvestorTransactionType = 'investment' | 'payout' | 'profit';
 
 export interface InvestorTransaction {
     id: number;
     investorId: number;
-    type: InvestorTransactionType;
+    transactionType: InvestorTransactionType;
     amount: number;
     date: string; // YYYY-MM-DD
     notes?: string;
-    relatedPurchaseInvoiceId?: string;
+    purchaseInvoiceId?: number;
 }
 
 // Offline Sync Type

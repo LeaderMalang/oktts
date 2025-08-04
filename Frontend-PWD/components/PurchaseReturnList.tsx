@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Page, InvoiceStatus, PurchaseReturn } from '../types';
-import { PURCHASE_RETURNS, ICONS } from '../constants';
+import { ICONS } from '../constants';
+import { fetchPurchaseReturns } from '../services/purchase';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 
@@ -22,6 +23,10 @@ const StatusBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) => {
 };
 
 const PurchaseReturnList: React.FC<PurchaseReturnListProps> = ({ setCurrentPage, handleEditPurchaseReturn }) => {
+    const [returns, setReturns] = useState<PurchaseReturn[]>([]);
+    useEffect(() => {
+        fetchPurchaseReturns().then(setReturns).catch(console.error);
+    }, []);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [startDate, setStartDate] = useState('');
@@ -35,7 +40,7 @@ const PurchaseReturnList: React.FC<PurchaseReturnListProps> = ({ setCurrentPage,
     };
 
     const filteredReturns = useMemo(() => {
-        return PURCHASE_RETURNS.filter(pReturn => {
+        return returns.filter(pReturn => {
             const searchLower = searchTerm.toLowerCase();
             const matchesSearch = searchTerm === '' ||
                 pReturn.returnNo.toLowerCase().includes(searchLower) ||
@@ -49,7 +54,7 @@ const PurchaseReturnList: React.FC<PurchaseReturnListProps> = ({ setCurrentPage,
 
             return matchesSearch && matchesStatus && matchesStartDate && matchesEndDate;
         });
-    }, [searchTerm, statusFilter, startDate, endDate]);
+    }, [returns, searchTerm, statusFilter, startDate, endDate]);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -107,7 +112,7 @@ const PurchaseReturnList: React.FC<PurchaseReturnListProps> = ({ setCurrentPage,
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{pReturn.returnNo}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{pReturn.supplier?.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{pReturn.date}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">Rs. {pReturn.grandTotal.toFixed(2)}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">Rs. {pReturn.totalAmount.toFixed(2)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm"><StatusBadge status={pReturn.status} /></td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onClick={() => handleEditPurchaseReturn(pReturn)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">View/Edit</button>

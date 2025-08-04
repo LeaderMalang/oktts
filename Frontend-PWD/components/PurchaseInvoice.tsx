@@ -3,7 +3,7 @@ import { PurchaseInvoice, PurchaseInvoiceItem, Task, InvoiceStatus } from '../ty
 import { SUPPLIERS, PRODUCTS, EMPLOYEES, PARTIES_DATA } from '../constants';
 import { ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
-import { addToSyncQueue, registerSync } from '../services/db';
+import { createPurchaseInvoice, updatePurchaseInvoice } from '../services/purchase';
 
 interface PurchaseInvoiceProps {
   invoiceToEdit: PurchaseInvoice | null;
@@ -34,7 +34,7 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
     date: new Date().toISOString().split('T')[0],
     companyInvoiceNumber: '',
     items: [],
-    subTotal: 0,
+    totalAmount: 0,
     discount: 0,
     tax: 10, // Default 10% tax
     grandTotal: 0,
@@ -65,9 +65,9 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
   const supplier = useMemo(() => SUPPLIERS.find(s => s.id === supplierId), [supplierId]);
 
   useEffect(() => {
-    const subTotal = invoice.items.reduce((acc, item) => acc + item.netAmount, 0);
-    const discountAmount = (subTotal * invoice.discount) / 100;
-    const taxableAmount = subTotal - discountAmount;
+    const totalAmount = invoice.items.reduce((acc, item) => acc + item.netAmount, 0);
+    const discountAmount = (totalAmount * invoice.discount) / 100;
+    const taxableAmount = totalAmount - discountAmount;
     const taxAmount = (taxableAmount * invoice.tax) / 100;
     const grandTotal = taxableAmount + taxAmount;
     setInvoice(prev => {
@@ -75,7 +75,7 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
         if (prev.paymentMethod === 'Cash') {
             newPaidAmount = grandTotal;
         }
-        return { ...prev, subTotal, grandTotal, paidAmount: newPaidAmount };
+        return { ...prev, totalAmount, grandTotal, paidAmount: newPaidAmount };
     });
   }, [invoice.items, invoice.discount, invoice.tax, invoice.paymentMethod]);
 
@@ -107,7 +107,8 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
       expiryDate: '',
       quantity: 1,
       bonus: 0,
-      rate: 0,
+      purchasePrice: 0,
+      salePrice: 0,
       discount: 0,
       amount: 0,
       netAmount: 0,
@@ -124,7 +125,7 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
         
-        const amount = updatedItem.quantity * updatedItem.rate;
+        const amount = updatedItem.quantity * updatedItem.purchasePrice;
         const discountValue = amount * (updatedItem.discount / 100);
         const netAmount = amount - discountValue;
         
@@ -144,16 +145,16 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
 
   const handleSubmit = async () => {
     const finalInvoice: PurchaseInvoice = {
-      id: isEditMode ? invoiceToEdit.id : new Date().getTime().toString(),
+      id: isEditMode ? invoiceToEdit!.id : new Date().getTime().toString(),
       ...invoice,
       supplier: supplier || null,
     };
 
-    const endpoint = isEditMode ? `/api/purchases/${finalInvoice.id}` : '/api/purchases';
-    const method = isEditMode ? 'PUT' : 'POST';
-
-    await addToSyncQueue({ endpoint, method, payload: finalInvoice });
-    await registerSync();
+    if (isEditMode) {
+      await updatePurchaseInvoice(finalInvoice.id, finalInvoice);
+    } else {
+      await createPurchaseInvoice(finalInvoice);
+    }
     handleClose();
   };
 
@@ -195,7 +196,7 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
                         <td className="p-1"><FormInput type="date" value={item.expiryDate} onChange={(e) => handleItemChange(item.id, 'expiryDate', e.target.value)} style={{minWidth: '140px'}}/></td>
                         <td className="p-1"><FormInput type="number" value={item.quantity} onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))} min="1" style={{width: '80px'}}/></td>
                         <td className="p-1"><FormInput type="number" value={item.bonus} onChange={(e) => handleItemChange(item.id, 'bonus', parseInt(e.target.value))} min="0" style={{width: '80px'}}/></td>
-                        <td className="p-1"><FormInput type="number" value={item.rate} onChange={(e) => handleItemChange(item.id, 'rate', parseFloat(e.target.value))} min="0" step="0.01" style={{width: '90px'}}/></td>
+                        <td className="p-1"><FormInput type="number" value={item.purchasePrice} onChange={(e) => handleItemChange(item.id, 'purchasePrice', parseFloat(e.target.value))} min="0" step="0.01" style={{width: '90px'}}/></td>
                         <td className="p-1"><FormInput type="number" value={item.discount} onChange={(e) => handleItemChange(item.id, 'discount', parseFloat(e.target.value))} min="0" max="100" style={{width: '80px'}}/></td>
                         <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.netAmount.toFixed(2)}</td>
                         <td className="p-1 text-center"><button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-100 dark:hover:bg-gray-700">{ICONS.trash}</button></td>
@@ -214,9 +215,9 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
             {createTask && (<div className="space-y-3"><FormField label="Task Title"><FormInput type="text" value={taskDetails.title} onChange={e => handleTaskDetailChange('title', e.target.value)} /></FormField><div className="grid grid-cols-2 gap-4"><FormField label="Assign To"><SearchableSelect options={EMPLOYEES.map(e => ({ value: e.id, label: e.name }))} value={taskDetails.assignedTo || null} onChange={val => handleTaskDetailChange('assignedTo', val)} /></FormField><FormField label="Due Date"><FormInput type="date" value={taskDetails.dueDate} onChange={e => handleTaskDetailChange('dueDate', e.target.value)} /></FormField></div></div>)}
         </fieldset>
         <div className="w-full md:max-w-sm space-y-3">
-            <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="font-medium text-gray-900 dark:text-white">Rs. {invoice.subTotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="font-medium text-gray-900 dark:text-white">Rs. {invoice.totalAmount.toFixed(2)}</span></div>
             <div className="flex justify-between items-center"><label htmlFor="discount" className="text-gray-600 dark:text-gray-400">Overall Discount (%):</label><input type="number" id="discount" value={invoice.discount} onChange={(e) => setInvoice(p => ({...p, discount: parseFloat(e.target.value) || 0}))} className="w-24 text-right text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500" /></div>
-            <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Tax ({invoice.tax}%):</span><span className="font-medium text-gray-900 dark:text-white">Rs. {(invoice.grandTotal - (invoice.subTotal - (invoice.subTotal * invoice.discount / 100))).toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Tax ({invoice.tax}%):</span><span className="font-medium text-gray-900 dark:text-white">Rs. {(invoice.grandTotal - (invoice.totalAmount - (invoice.totalAmount * invoice.discount / 100))).toFixed(2)}</span></div>
             {invoice.paymentMethod === 'Credit' && (<div className="flex justify-between items-center"><label htmlFor="paidAmount" className="text-gray-600 dark:text-gray-400">Paid Amount:</label><input type="number" id="paidAmount" value={invoice.paidAmount || 0} onChange={(e) => setInvoice(p => ({...p, paidAmount: parseFloat(e.target.value) || 0}))} className="w-24 text-right text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500" /></div>)}
             <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
             <div className="flex justify-between text-lg font-bold"><span className="text-gray-900 dark:text-white">{invoice.paymentMethod === 'Credit' && (invoice.paidAmount || 0) < invoice.grandTotal ? 'Amount Due:' : 'Grand Total:'}</span><span className="text-blue-600 dark:text-blue-400">Rs. {(invoice.grandTotal - (invoice.paidAmount || 0)).toFixed(2)}</span></div>
