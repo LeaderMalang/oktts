@@ -103,5 +103,5 @@ class SaleReturnAdmin(admin.ModelAdmin):
 
 @admin.register(RecoveryLog)
 class RecoveryLogAdmin(admin.ModelAdmin):
-    list_display = ['invoice', 'recovered_by', 'amount', 'date']
-    list_filter = ['date', 'recovered_by']
+    list_display = ['invoice', 'employee', 'notes', 'date']
+    list_filter = ['date', 'employee']

@@ -123,7 +123,7 @@ class PriceList(models.Model):
 
 class PriceListItem(models.Model):
     price_list = models.ForeignKey(PriceList, related_name='items', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="price_list_items")
     custom_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
