@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Page, InvoiceStatus, PurchaseInvoice } from '../types';
-import { PURCHASE_INVOICES, ICONS } from '../constants';
+import { ICONS } from '../constants';
+import { fetchPurchaseInvoices } from '../services/purchase';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 
@@ -22,6 +23,10 @@ const StatusBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) => {
 };
 
 const PurchaseInvoiceList: React.FC<PurchaseInvoiceListProps> = ({ setCurrentPage, handleEditPurchaseInvoice }) => {
+    const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+    useEffect(() => {
+        fetchPurchaseInvoices().then(setInvoices).catch(console.error);
+    }, []);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [startDate, setStartDate] = useState('');
@@ -35,7 +40,7 @@ const PurchaseInvoiceList: React.FC<PurchaseInvoiceListProps> = ({ setCurrentPag
     };
 
     const filteredInvoices = useMemo(() => {
-        return PURCHASE_INVOICES.filter(invoice => {
+        return invoices.filter(invoice => {
             const searchLower = searchTerm.toLowerCase();
             const matchesSearch = searchTerm === '' ||
                 invoice.invoiceNo.toLowerCase().includes(searchLower) ||
@@ -50,7 +55,7 @@ const PurchaseInvoiceList: React.FC<PurchaseInvoiceListProps> = ({ setCurrentPag
 
             return matchesSearch && matchesStatus && matchesStartDate && matchesEndDate;
         });
-    }, [searchTerm, statusFilter, startDate, endDate]);
+    }, [invoices, searchTerm, statusFilter, startDate, endDate]);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
