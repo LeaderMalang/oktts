@@ -204,37 +204,41 @@ export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface Employee {
     id: number;
-    name: string;
+    user?: number | null;
     role: EmployeeRole;
+    name: string;
     phone: string;
     email?: string;
+    cnic?: string;
+    address?: string;
     active: boolean;
 }
 
 export interface LeaveRequest {
     id: number;
-    employeeId: number;
-    employeeName: string; // Denormalized for easy display
+    employee: number;
     leaveType: LeaveType;
     startDate: string; // YYYY-MM-DD
     endDate: string; // YYYY-MM-DD
     reason?: string;
     status: LeaveStatus;
+    appliedOn: string;
+    reviewedBy?: number | null;
 }
 
 export interface AttendanceRecord {
-    id: string; // e.g., `${employeeId}-${date}`
-    employeeId: number;
-    employeeName: string;
+    id: number;
+    employee: number;
     date: string; // YYYY-MM-DD
     checkIn: string | null; // HH:MM
     checkOut: string | null; // HH:MM
     isAbsent: boolean;
+    remarks?: string;
 }
 
 export interface EmployeeContract {
     id: number;
-    employeeId: number;
+    employee: number;
     startDate: string; // YYYY-MM-DD
     endDate: string | null; // YYYY-MM-DD
     salary: number;
@@ -243,9 +247,46 @@ export interface EmployeeContract {
 
 export interface SalesTarget {
     id: number;
-    employeeId: number;
+    employee: number;
     month: string; // YYYY-MM-01
     targetAmount: number;
+}
+
+export interface LeaveBalance {
+    id: number;
+    employee: number;
+    annual: number;
+    sick: number;
+    casual: number;
+}
+
+export interface PayrollSlip {
+    id: number;
+    employee: number;
+    month: string; // YYYY-MM-01
+    baseSalary: number;
+    presentDays: number;
+    absentDays: number;
+    leavesPaid: number;
+    deductions: number;
+    netSalary: number;
+    createdOn: string;
+}
+
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface Task {
+    id: number;
+    assignment: string;
+    assignedTo: number;
+    assignedBy?: number | null;
+    dueDate: string; // YYYY-MM-DD
+    status: TaskStatus;
+    party?: number | null;
+    invoiceContentType?: number | null;
+    invoiceObjectId?: number | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 // Inventory Module Types

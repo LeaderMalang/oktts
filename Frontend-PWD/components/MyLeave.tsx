@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, LeaveRequest, LeaveType, LeaveStatus } from '../types';
-import { LEAVE_REQUESTS } from '../constants';
 import { ICONS } from '../constants';
-import { addToSyncQueue, registerSync } from '../services/db';
+import { getLeaveRequests, createLeaveRequest } from '../services/hr';
 
-const LeaveFormModal: React.FC<{ onClose: () => void; onSave: (request: Omit<LeaveRequest, 'id' | 'employeeId' | 'employeeName' | 'status'>) => void; }> = ({ onClose, onSave }) => {
+const LeaveFormModal: React.FC<{ onClose: () => void; onSave: (request: Omit<LeaveRequest, 'id' | 'employee' | 'status' | 'appliedOn' | 'reviewedBy'>) => void; }> = ({ onClose, onSave }) => {
     const [formData, setFormData] = useState({ leaveType: 'ANNUAL' as LeaveType, startDate: '', endDate: '', reason: '' });
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
     const handleSubmit = (e: React.FormEvent) => {
@@ -59,31 +58,26 @@ const StatusBadge: React.FC<{ status: LeaveStatus }> = ({ status }) => {
 
 
 const MyLeave: React.FC<{ currentUser: User }> = ({ currentUser }) => {
-    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(LEAVE_REQUESTS);
+    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    useEffect(() => {
+        getLeaveRequests(currentUser.id).then(setLeaveRequests);
+    }, [currentUser.id]);
+
     const myRequests = useMemo(() => {
-        return leaveRequests.filter(req => req.employeeId === currentUser.id)
+        return leaveRequests
+            .filter(req => req.employee === currentUser.id)
             .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     }, [leaveRequests, currentUser.id]);
 
-    const handleSaveRequest = async (requestData: Omit<LeaveRequest, 'id' | 'employeeName' | 'status' | 'employeeId'>) => {
-        const payload = {
-            ...requestData,
-            employeeId: currentUser.id,
-        };
-        await addToSyncQueue({ endpoint: '/api/leave-requests', method: 'POST', payload });
-        await registerSync();
-        
-        // Optimistic UI update
-        const newRequest: LeaveRequest = {
-            ...requestData,
-            id: Math.max(0, ...leaveRequests.map(r => r.id)) + 1,
-            employeeId: currentUser.id,
-            employeeName: currentUser.username,
-            status: 'PENDING'
-        };
-        setLeaveRequests(prev => [newRequest, ...prev]);
+    const handleSaveRequest = async (
+        requestData: Omit<LeaveRequest, 'id' | 'employee' | 'status' | 'appliedOn' | 'reviewedBy'>
+    ) => {
+        const payload = { ...requestData, employee: currentUser.id };
+        const saved = await createLeaveRequest(payload);
+        setLeaveRequests(prev => [saved, ...prev]);
+
         setIsModalOpen(false);
     };
 

@@ -1,10 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Employee, LeaveRequest, AttendanceRecord, EmployeeRole, LeaveStatus } from '../types';
-import { EMPLOYEES, LEAVE_REQUESTS, ATTENDANCE_RECORDS, ICONS } from '../constants';
+import { ICONS } from '../constants';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
-import { addToSyncQueue, registerSync } from '../services/db';
 import SearchableSelect from './SearchableSelect';
+import {
+    getEmployees,
+    createEmployee,
+    updateEmployee,
+    getLeaveRequests,
+    updateLeaveRequest,
+    getAttendance,
+    updateAttendance,
+} from '../services/hr';
 
 // Type definitions for this component
 type HRTab = 'employees' | 'leaves' | 'attendance';
@@ -28,9 +36,15 @@ const HR: React.FC = () => {
     const [activeTab, setActiveTab] = useState<HRTab>('employees');
 
     // Lifted state for all HR data
-    const [employees, setEmployees] = useState<Employee[]>(EMPLOYEES);
-    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(LEAVE_REQUESTS);
-    const [attendance, setAttendance] = useState<AttendanceRecord[]>(ATTENDANCE_RECORDS);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+    const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+
+    useEffect(() => {
+        getEmployees().then(setEmployees);
+        getLeaveRequests().then(setLeaveRequests);
+        getAttendance().then(setAttendance);
+    }, []);
 
     // Modal state for employees
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,33 +58,30 @@ const HR: React.FC = () => {
 
     const handleSaveEmployee = async (employeeData: Employee) => {
         const isEdit = !!employeeData.id;
-        const payload = isEdit ? employeeData : { ...employeeData, id: Date.now() };
-        const method = isEdit ? 'PUT' : 'POST';
-        const endpoint = isEdit ? `/api/employees/${employeeData.id}` : '/api/employees';
-
-        await addToSyncQueue({ endpoint, method, payload });
-        await registerSync();
-
-        setEmployees(prev => isEdit ? prev.map(e => e.id === payload.id ? payload : e) : [...prev, payload]);
-
+        const saved = isEdit
+            ? await updateEmployee(employeeData.id, employeeData)
+            : await createEmployee(employeeData);
+        setEmployees(prev =>
+            isEdit ? prev.map(e => (e.id === saved.id ? saved : e)) : [...prev, saved]
+        );
         setIsModalOpen(false);
         setCurrentItem(null);
     };
 
     // Handlers for Leave Request management
     const handleLeaveStatusChange = async (leaveId: number, status: LeaveStatus) => {
-        const payload = { status };
-        await addToSyncQueue({ endpoint: `/api/leave-requests/${leaveId}/status`, method: 'PATCH', payload });
-        await registerSync();
-        setLeaveRequests(prev => prev.map(req => req.id === leaveId ? { ...req, status } : req));
+        const updated = await updateLeaveRequest(leaveId, { status });
+        setLeaveRequests(prev => prev.map(req => (req.id === leaveId ? updated : req)));
     };
 
     // Handlers for Attendance management
-    const handleAttendanceChange = async (recordId: string, field: keyof AttendanceRecord, value: any) => {
-        const payload = { [field]: value };
-        await addToSyncQueue({ endpoint: `/api/attendance/${recordId}`, method: 'PATCH', payload });
-        // No need to register sync here as it's a small, frequent change. User can sync when ready.
-        setAttendance(prev => prev.map(rec => rec.id === recordId ? { ...rec, [field]: value } : rec));
+    const handleAttendanceChange = async (
+        recordId: number,
+        field: keyof AttendanceRecord,
+        value: any
+    ) => {
+        const updated = await updateAttendance(recordId, { [field]: value });
+        setAttendance(prev => prev.map(rec => (rec.id === recordId ? updated : rec)));
     };
 
     const renderTabContent = () => {
@@ -78,7 +89,13 @@ const HR: React.FC = () => {
             case 'employees': 
                 return <EmployeeList employees={employees} onEdit={openEmployeeModal} onAdd={() => openEmployeeModal()} />;
             case 'leaves': 
-                return <LeaveRequestsList leaveRequests={leaveRequests} onStatusChange={handleLeaveStatusChange} />;
+                return (
+                    <LeaveRequestsList
+                        leaveRequests={leaveRequests}
+                        employees={employees}
+                        onStatusChange={handleLeaveStatusChange}
+                    />
+                );
             case 'attendance': 
                 return <AttendanceLog attendance={attendance} onAttendanceChange={handleAttendanceChange} />;
             default: return null;
@@ -153,7 +170,7 @@ const EmployeeList: React.FC<{ employees: Employee[]; onEdit: (emp: Employee) =>
         );
     }, [employees, searchTerm, roleFilter]);
 
-    const roleOptions = Array.from(new Set(EMPLOYEES.map(e => e.role)));
+    const roleOptions = Array.from(new Set(employees.map(e => e.role)));
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -212,13 +229,13 @@ const StatusBadge: React.FC<{ status: LeaveStatus }> = ({ status }) => {
     return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClasses}`}>{status}</span>;
 }
 
-const LeaveRequestsList: React.FC<{ leaveRequests: LeaveRequest[]; onStatusChange: (id: number, status: LeaveStatus) => void; }> = ({ leaveRequests, onStatusChange }) => {
+const LeaveRequestsList: React.FC<{ leaveRequests: LeaveRequest[]; employees: Employee[]; onStatusChange: (id: number, status: LeaveStatus) => void; }> = ({ leaveRequests, employees, onStatusChange }) => {
     const [employeeFilter, setEmployeeFilter] = useState('All');
     const [statusFilter, setStatusFilter] = useState<LeaveStatus | 'All'>('All');
 
     const filteredRequests = useMemo(() => {
-        return leaveRequests.filter(req => 
-            (employeeFilter === 'All' || req.employeeId === Number(employeeFilter)) &&
+        return leaveRequests.filter(req =>
+            (employeeFilter === 'All' || req.employee === Number(employeeFilter)) &&
             (statusFilter === 'All' || req.status === statusFilter)
         );
     }, [leaveRequests, employeeFilter, statusFilter]);
@@ -229,7 +246,7 @@ const LeaveRequestsList: React.FC<{ leaveRequests: LeaveRequest[]; onStatusChang
             <FilterBar>
                  <FilterControls.Select value={employeeFilter} onChange={e => setEmployeeFilter(e.target.value)}>
                     <option value="All">All Employees</option>
-                    {EMPLOYEES.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                    {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
                 </FilterControls.Select>
                 <FilterControls.Select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}>
                     <option value="All">All Statuses</option>
@@ -254,7 +271,7 @@ const LeaveRequestsList: React.FC<{ leaveRequests: LeaveRequest[]; onStatusChang
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-600">
                         {filteredRequests.map(req => (
                             <tr key={req.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{req.employeeName}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{employees.find(e => e.id === req.employee)?.name || req.employee}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">{req.startDate} to {req.endDate}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">{req.leaveType}</td>
                                 <td className="px-6 py-4 text-sm max-w-xs truncate">{req.reason}</td>
@@ -277,7 +294,7 @@ const LeaveRequestsList: React.FC<{ leaveRequests: LeaveRequest[]; onStatusChang
 };
 
 // AttendanceLog Component
-const AttendanceLog: React.FC<{ attendance: AttendanceRecord[]; onAttendanceChange: (id: string, field: keyof AttendanceRecord, value: any) => void; }> = ({ attendance, onAttendanceChange }) => {
+const AttendanceLog: React.FC<{ attendance: AttendanceRecord[]; onAttendanceChange: (id: number, field: keyof AttendanceRecord, value: any) => void; }> = ({ attendance, onAttendanceChange }) => {
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
 
     const filteredAttendance = useMemo(() => {
@@ -303,7 +320,7 @@ const AttendanceLog: React.FC<{ attendance: AttendanceRecord[]; onAttendanceChan
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-600">
                         {filteredAttendance.map(rec => (
                             <tr key={rec.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{rec.employeeName}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{rec.employee}</td>
                                 <td className="px-6 py-4"><input type="time" value={rec.checkIn || ''} onBlur={e => onAttendanceChange(rec.id, 'checkIn', e.target.value)} disabled={rec.isAbsent} className="w-32 text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></td>
                                 <td className="px-6 py-4"><input type="time" value={rec.checkOut || ''} onBlur={e => onAttendanceChange(rec.id, 'checkOut', e.target.value)} disabled={rec.isAbsent} className="w-32 text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></td>
                                 <td className="px-6 py-4 text-center"><input type="checkbox" checked={rec.isAbsent} onChange={e => onAttendanceChange(rec.id, 'isAbsent', e.target.checked)} className="h-4 w-4 rounded text-blue-600" /></td>
