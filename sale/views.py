@@ -3,8 +3,22 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
-from .models import SaleInvoice, SaleInvoiceItem
-from .forms import SaleInvoiceForm,SaleInvoiceItemForm
+from rest_framework import viewsets
+
+from .models import (
+    SaleInvoice,
+    SaleInvoiceItem,
+    SaleReturn,
+    SaleReturnItem,
+    RecoveryLog,
+)
+from .forms import SaleInvoiceForm, SaleInvoiceItemForm
+from .serializers import (
+    SaleInvoiceSerializer,
+    SaleReturnSerializer,
+    SaleReturnItemSerializer,
+    RecoveryLogSerializer,
+)
 
 
 @require_http_methods(["GET"])
@@ -72,3 +86,23 @@ def sale_invoice_detail(request, pk):
         pk=pk,
     )
     return render(request, 'invoice/sale_detail.html', {'sale': invoice})
+
+
+class SaleInvoiceViewSet(viewsets.ModelViewSet):
+    queryset = SaleInvoice.objects.all().prefetch_related('items', 'recovery_logs')
+    serializer_class = SaleInvoiceSerializer
+
+
+class SaleReturnViewSet(viewsets.ModelViewSet):
+    queryset = SaleReturn.objects.all().prefetch_related('items')
+    serializer_class = SaleReturnSerializer
+
+
+class SaleReturnItemViewSet(viewsets.ModelViewSet):
+    queryset = SaleReturnItem.objects.all()
+    serializer_class = SaleReturnItemSerializer
+
+
+class RecoveryLogViewSet(viewsets.ModelViewSet):
+    queryset = RecoveryLog.objects.all()
+    serializer_class = RecoveryLogSerializer

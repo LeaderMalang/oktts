@@ -51,6 +51,7 @@ const CreditRecovery: React.FC<CreditRecoveryProps> = ({ currentUser }) => {
 
         const newLog: RecoveryLog = {
             id: Date.now(),
+            invoiceId: Number(selectedOrder.id),
             date: new Date().toISOString(),
             notes: newNote,
             employeeId: currentUser.id,

@@ -84,7 +84,7 @@ export interface InvoiceItem {
   id: string; // Temporary client-side ID
   productId: number | null;
   batchId: number | null;
-  packing?: string;
+  packing: number | null;
   bonus: number;
   quantity: number;
   rate: number;
@@ -109,34 +109,41 @@ export interface PurchaseInvoiceItem {
 
 export interface RecoveryLog {
     id: number;
+    invoiceId: number;
+    employeeId: number | null;
     date: string; // ISO Timestamp
     notes: string;
-    employeeId: number;
 }
 
 
 export interface Order {
-  id: string; // Changed from invoiceNo to be a unique ID
+  id: string;
   invoiceNo: string;
   status: OrderStatus;
-  userId: number; // The customer who placed the order
   customer: Party | null;
+  customerId?: number | null; // for API submissions
+  warehouseId?: number | null;
+  salesmanId?: number | null;
   cityId: number | null;
   areaId: number | null;
   supplyingManId: number | null;
   bookingManId: number | null;
   deliveryManId?: number | null;
-  companyName: string;
+  companyInvoiceNumber?: string;
   date: string;
   items: InvoiceItem[];
   subTotal: number;
   discount: number;
-  tax: number; // As a percentage
+  tax: number;
   grandTotal: number;
+  netAmount?: number;
+  paidAmount?: number;
   qrCode: string | null;
   paymentMethod: 'Cash' | 'Credit';
-  paidAmount?: number;
   recoveryLogs?: RecoveryLog[];
+  // Deprecated fields for backward compatibility
+  userId?: number;
+  companyName?: string;
 }
 
 
@@ -161,19 +168,25 @@ export interface SaleReturnItem {
     id: string; // temp client-side ID
     productId: number | null;
     batchNo: string;
+    expiryDate: string;
     quantity: number;
     rate: number;
+    discount1: number;
+    discount2: number;
     amount: number;
+    netAmount: number;
 }
 
 export interface SaleReturn {
     id: string;
     returnNo: string;
-    status: InvoiceStatus;
     customer: Party | null;
+    warehouseId: number | null;
     date: string;
     items: SaleReturnItem[];
-    grandTotal: number;
+    totalAmount: number;
+    // Deprecated for compatibility
+    status?: InvoiceStatus;
 }
 
 

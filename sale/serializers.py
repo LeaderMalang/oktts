@@ -1,50 +1,133 @@
 from rest_framework import serializers
 
-from .models import SaleInvoice, SaleInvoiceItem
+from .models import (
+    SaleInvoice,
+    SaleInvoiceItem,
+    SaleReturn,
+    SaleReturnItem,
+    RecoveryLog,
+)
 
 
 class SaleInvoiceItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SaleInvoiceItem
-        fields = ['product', 'quantity', 'rate', 'amount']
+        fields = [
+            "id",
+            "product",
+            "batch",
+            "quantity",
+            "bonus",
+            "packing",
+            "rate",
+            "discount1",
+            "discount2",
+            "amount",
+            "net_amount",
+        ]
+
+
+class RecoveryLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecoveryLog
+        fields = ["id", "invoice", "employee", "date", "notes"]
 
 
 class SaleInvoiceSerializer(serializers.ModelSerializer):
-    items = SaleInvoiceItemSerializer(many=True, read_only=True)
+    items = SaleInvoiceItemSerializer(many=True)
+    recovery_logs = RecoveryLogSerializer(many=True, read_only=True)
 
     class Meta:
         model = SaleInvoice
         fields = [
-            'id',
-            'invoice_no',
-            'company_invoice_number',
-            'date',
-            'customer',
-            'warehouse',
-            'salesman',
-            'delivery_person',
-            'investor',
-            'total_amount',
-            'discount',
-            'tax',
-            'grand_total',
-            'payment_method',
-            'paid_amount',
-            'status',
-            'items',
+            "id",
+            "invoice_no",
+            "company_invoice_number",
+            "date",
+            "customer",
+            "warehouse",
+            "salesman",
+            "booking_man_id",
+            "supplying_man_id",
+            "delivery_man_id",
+            "city_id",
+            "area_id",
+            "sub_total",
+            "discount",
+            "tax",
+            "grand_total",
+            "paid_amount",
+            "net_amount",
+            "payment_method",
+            "status",
+            "qr_code",
+            "items",
+            "recovery_logs",
         ]
 
+    def create(self, validated_data):
+        items_data = validated_data.pop("items", [])
+        invoice = SaleInvoice.objects.create(**validated_data)
+        for item in items_data:
+            SaleInvoiceItem.objects.create(invoice=invoice, **item)
+        return invoice
+
     def validate(self, data):
-        total = data.get('total_amount') or 0
-        discount = data.get('discount') or 0
-        tax = data.get('tax') or 0
-        grand_total = data.get('grand_total') or 0
+        total = data.get("sub_total") or 0
+        discount = data.get("discount") or 0
+        tax = data.get("tax") or 0
+        grand_total = data.get("grand_total") or 0
         expected_grand_total = total - discount + tax
         if grand_total != expected_grand_total:
-            raise serializers.ValidationError({'grand_total': 'Grand total must equal total minus discount plus tax.'})
+            raise serializers.ValidationError(
+                {"grand_total": "Grand total must equal sub total minus discount plus tax."}
+            )
 
-        paid = data.get('paid_amount') or 0
+        paid = data.get("paid_amount") or 0
         if paid > grand_total:
-            raise serializers.ValidationError({'paid_amount': 'Paid amount cannot exceed grand total.'})
+            raise serializers.ValidationError(
+                {"paid_amount": "Paid amount cannot exceed grand total."}
+            )
         return data
+
+
+class SaleReturnItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleReturnItem
+        fields = [
+            "id",
+            "return_invoice",
+            "product",
+            "batch_number",
+            "expiry_date",
+            "quantity",
+            "rate",
+            "discount1",
+            "discount2",
+            "amount",
+            "net_amount",
+        ]
+
+
+class SaleReturnSerializer(serializers.ModelSerializer):
+    items = SaleReturnItemSerializer(many=True)
+
+    class Meta:
+        model = SaleReturn
+        fields = [
+            "id",
+            "return_no",
+            "date",
+            "customer",
+            "warehouse",
+            "total_amount",
+            "items",
+        ]
+
+    def create(self, validated_data):
+        items_data = validated_data.pop("items", [])
+        sr = SaleReturn.objects.create(**validated_data)
+        for item in items_data:
+            SaleReturnItem.objects.create(return_invoice=sr, **item)
+        return sr
 
