@@ -129,36 +129,36 @@ export const EMPLOYEES: Employee[] = [
 ];
 
 export const EMPLOYEE_CONTRACTS: EmployeeContract[] = [
-    { id: 1, employeeId: 1, startDate: '2022-01-01', endDate: null, salary: 75000, notes: 'Managerial role' },
-    { id: 2, employeeId: 2, startDate: '2023-03-15', endDate: null, salary: 55000, notes: 'Sales commission applies' },
-    { id: 3, employeeId: 3, startDate: '2023-05-20', endDate: '2024-05-19', salary: 42000, notes: '1-year contract' }
+    { id: 1, employee: 1, startDate: '2022-01-01', endDate: null, salary: 75000, notes: 'Managerial role' },
+    { id: 2, employee: 2, startDate: '2023-03-15', endDate: null, salary: 55000, notes: 'Sales commission applies' },
+    { id: 3, employee: 3, startDate: '2023-05-20', endDate: '2024-05-19', salary: 42000, notes: '1-year contract' }
 ];
 
 export const SALES_TARGETS: SalesTarget[] = [
-    { id: 1, employeeId: 2, month: '2024-07-01', targetAmount: 50000 },
-    { id: 2, employeeId: 2, month: '2024-08-01', targetAmount: 52000 }
+    { id: 1, employee: 2, month: '2024-07-01', targetAmount: 50000 },
+    { id: 2, employee: 2, month: '2024-08-01', targetAmount: 52000 }
 ];
 
 
 export const LEAVE_REQUESTS: LeaveRequest[] = [
-    { id: 1, employeeId: 2, employeeName: 'Jane Smith', leaveType: 'ANNUAL', startDate: '2024-08-10', endDate: '2024-08-15', status: 'PENDING', reason: 'Family vacation' },
-    { id: 2, employeeId: 3, employeeName: 'Peter Jones', leaveType: 'SICK', startDate: '2024-07-22', endDate: '2024-07-23', status: 'APPROVED' },
-    { id: 3, employeeId: 4, employeeName: 'Mary Johnson', leaveType: 'CASUAL', startDate: '2024-07-25', endDate: '2024-07-25', status: 'REJECTED', reason: 'Insufficient staff coverage' },
-    { id: 4, employeeId: 2, employeeName: 'Jane Smith', leaveType: 'SICK', startDate: '2024-06-05', endDate: '2024-06-05', status: 'APPROVED' },
-    { id: 5, employeeId: 201, employeeName: 'Walter House', leaveType: 'ANNUAL', startDate: '2024-09-01', endDate: '2024-09-05', status: 'PENDING', reason: 'Personal time off' },
-    { id: 6, employeeId: 202, employeeName: 'David Manager', leaveType: 'SICK', startDate: '2024-08-05', endDate: '2024-08-05', status: 'APPROVED' }
+    { id: 1, employee: 2, leaveType: 'ANNUAL', startDate: '2024-08-10', endDate: '2024-08-15', status: 'PENDING', reason: 'Family vacation', appliedOn: '2024-07-01T00:00:00Z', reviewedBy: null },
+    { id: 2, employee: 3, leaveType: 'SICK', startDate: '2024-07-22', endDate: '2024-07-23', status: 'APPROVED', appliedOn: '2024-07-01T00:00:00Z', reviewedBy: null },
+    { id: 3, employee: 4, leaveType: 'CASUAL', startDate: '2024-07-25', endDate: '2024-07-25', status: 'REJECTED', reason: 'Insufficient staff coverage', appliedOn: '2024-07-01T00:00:00Z', reviewedBy: null },
+    { id: 4, employee: 2, leaveType: 'SICK', startDate: '2024-06-05', endDate: '2024-06-05', status: 'APPROVED', appliedOn: '2024-06-01T00:00:00Z', reviewedBy: null },
+    { id: 5, employee: 201, leaveType: 'ANNUAL', startDate: '2024-09-01', endDate: '2024-09-05', status: 'PENDING', reason: 'Personal time off', appliedOn: '2024-08-01T00:00:00Z', reviewedBy: null },
+    { id: 6, employee: 202, leaveType: 'SICK', startDate: '2024-08-05', endDate: '2024-08-05', status: 'APPROVED', appliedOn: '2024-07-30T00:00:00Z', reviewedBy: null }
 ];
 
 export const ATTENDANCE_RECORDS: AttendanceRecord[] = [
-    { id: '1-2024-07-28', employeeId: 1, employeeName: 'John Doe', date: '2024-07-28', checkIn: '09:05', checkOut: '17:30', isAbsent: false },
-    { id: '2-2024-07-28', employeeId: 2, employeeName: 'Jane Smith', date: '2024-07-28', checkIn: '09:00', checkOut: '17:25', isAbsent: false },
-    { id: '3-2024-07-28', employeeId: 3, employeeName: 'Peter Jones', date: '2024-07-28', checkIn: null, checkOut: null, isAbsent: true },
-    { id: '201-2024-07-28', employeeId: 201, employeeName: 'Walter House', date: '2024-07-28', checkIn: '08:55', checkOut: '17:00', isAbsent: false },
-    
-    { id: '1-2024-07-29', employeeId: 1, employeeName: 'John Doe', date: '2024-07-29', checkIn: '09:10', checkOut: '17:45', isAbsent: false },
-    { id: '2-2024-07-29', employeeId: 2, employeeName: 'Jane Smith', date: '2024-07-29', checkIn: '09:02', checkOut: '17:30', isAbsent: false },
-    { id: '3-2024-07-29', employeeId: 3, employeeName: 'Peter Jones', date: '2024-07-29', checkIn: '08:45', checkOut: '17:15', isAbsent: false },
-    { id: '201-2024-07-29', employeeId: 201, employeeName: 'Walter House', date: '2024-07-29', checkIn: '08:58', checkOut: '17:05', isAbsent: false },
+    { id: 1, employee: 1, date: '2024-07-28', checkIn: '09:05', checkOut: '17:30', isAbsent: false, remarks: '' },
+    { id: 2, employee: 2, date: '2024-07-28', checkIn: '09:00', checkOut: '17:25', isAbsent: false, remarks: '' },
+    { id: 3, employee: 3, date: '2024-07-28', checkIn: null, checkOut: null, isAbsent: true, remarks: '' },
+    { id: 4, employee: 201, date: '2024-07-28', checkIn: '08:55', checkOut: '17:00', isAbsent: false, remarks: '' },
+
+    { id: 5, employee: 1, date: '2024-07-29', checkIn: '09:10', checkOut: '17:45', isAbsent: false, remarks: '' },
+    { id: 6, employee: 2, date: '2024-07-29', checkIn: '09:02', checkOut: '17:30', isAbsent: false, remarks: '' },
+    { id: 7, employee: 3, date: '2024-07-29', checkIn: '08:45', checkOut: '17:15', isAbsent: false, remarks: '' },
+    { id: 8, employee: 201, date: '2024-07-29', checkIn: '08:58', checkOut: '17:05', isAbsent: false, remarks: '' },
 ];
 
 
@@ -290,10 +290,10 @@ export const INTERACTIONS: Interaction[] = [
 
 // Task Management Mock Data
 export const TASKS: Task[] = [
-    { id: 1, title: 'Follow-up on INV-2024-003', description: 'Call City Pharmacy to confirm payment for invoice INV-2024-003.', assignedTo: 2, dueDate: '2024-08-10', status: 'Pending', relatedTo: { type: 'SaleInvoice', id: '3', name: 'INV-2024-003' }, createdAt: '2024-07-26T10:00:00Z' },
-    { id: 2, title: 'Prepare stock for PI-2024-055', description: 'Unpack and verify stock received from PharmaCo Global.', assignedTo: 201, dueDate: '2024-07-26', status: 'Completed', relatedTo: { type: 'PurchaseInvoice', id: 'pi-1', name: 'PI-2024-055' }, createdAt: '2024-07-25T11:00:00Z' },
-    { id: 3, title: 'Qualify lead: General Hospital', assignedTo: 2, dueDate: '2024-07-30', status: 'In Progress', relatedTo: { type: 'Lead', id: 1, name: 'General Hospital' }, createdAt: '2024-07-22T10:05:00Z' },
-    { id: 4, title: 'Check credit limit for Wellness Drug Store', description: 'Review current balance and discuss potential credit limit increase.', assignedTo: 1, dueDate: '2024-08-05', status: 'Pending', relatedTo: { type: 'Customer', id: 102, name: 'Wellness Drug Store' }, createdAt: '2024-07-29T09:00:00Z' }
+    { id: 1, assignment: 'Follow-up on INV-2024-003', assignedTo: 2, assignedBy: null, dueDate: '2024-08-10', status: 'PENDING', createdAt: '2024-07-26T10:00:00Z', updatedAt: '2024-07-26T10:00:00Z', party: null, invoiceContentType: null, invoiceObjectId: null },
+    { id: 2, assignment: 'Prepare stock for PI-2024-055', assignedTo: 201, assignedBy: null, dueDate: '2024-07-26', status: 'COMPLETED', createdAt: '2024-07-25T11:00:00Z', updatedAt: '2024-07-25T11:00:00Z', party: null, invoiceContentType: null, invoiceObjectId: null },
+    { id: 3, assignment: 'Qualify lead: General Hospital', assignedTo: 2, assignedBy: null, dueDate: '2024-07-30', status: 'IN_PROGRESS', createdAt: '2024-07-22T10:05:00Z', updatedAt: '2024-07-22T10:05:00Z', party: null, invoiceContentType: null, invoiceObjectId: null },
+    { id: 4, assignment: 'Check credit limit for Wellness Drug Store', assignedTo: 1, assignedBy: null, dueDate: '2024-08-05', status: 'PENDING', createdAt: '2024-07-29T09:00:00Z', updatedAt: '2024-07-29T09:00:00Z', party: null, invoiceContentType: null, invoiceObjectId: null }
 ];
 
 // Investor Mock Data

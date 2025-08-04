@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/expenses/', include('expense.urls')),
     path('api/investor/', include('investor.urls')),
     path('api/sync/', include('syncqueue.urls')),
+    path('api/hr/', include('hr.urls')),
 
 
 
