@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { Page, Party } from '../types';
 import { addToSyncQueue, registerSync } from '../services/db';
 
+
+
+const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string; className?: string }> = ({ label, className, ...props }) => (
+    <div className={className}>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+        <input {...props} className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+    </div>
+);
 const CustomerRegistration: React.FC<{ setCurrentPage: (page: Page) => void; }> = ({ setCurrentPage }) => {
     const [formData, setFormData] = useState<Partial<Party>>({ partyType: 'customer', name: '', proprietor: '', address: '', phone: '', licenseNo: '', licenseExpiry: '', category: '', latitude: null, longitude: null, });
     const [error, setError] = useState('');
@@ -28,7 +36,15 @@ const CustomerRegistration: React.FC<{ setCurrentPage: (page: Page) => void; }> 
                 </div>
                 <form className="mt-8" onSubmit={handleSubmit}>
                     <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       {/* ... form fields ... */}
+                       <FormInput label="Business Name" name="name" value={formData.name || ''} onChange={handleChange} required />
+                       <FormInput label="Proprietor Name" name="proprietor" value={formData.proprietor || ''} onChange={handleChange} required />
+                       <FormInput label="Phone Number" name="phone" value={formData.phone || ''} onChange={handleChange} required />
+                       <FormInput label="Email Address" name="email" type="email" value={(formData as any).email || ''} onChange={handleChange} required />
+                       
+                       <FormInput label="Address" name="address" value={formData.address || ''} onChange={handleChange} required className="md:col-span-2" />
+                       <FormInput label="Drug License No." name="licenseNo" value={formData.licenseNo || ''} onChange={handleChange} />
+                       <FormInput label="License Expiry" name="licenseExpiry" type="date" value={formData.licenseExpiry || ''} onChange={handleChange} />
+                   
                     </fieldset>
                     <div className="flex items-center justify-between pt-6 mt-6 border-t dark:border-gray-700">
                         <button type="button" onClick={() => setCurrentPage('login')} className="font-medium text-blue-600 hover:text-blue-500">&larr; Back to Login</button>

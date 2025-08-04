@@ -48,7 +48,7 @@ const InvestorDashboard: React.FC<InvestorDashboardProps> = ({ setCurrentPage, c
     return (
         <div className="space-y-8">
             <section>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Welcome, {currentUser.name}!</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Welcome, {currentUser.username}!</h2>
                 <p className="text-gray-500 dark:text-gray-400">Here's a summary of your investment portfolio.</p>
             </section>
             

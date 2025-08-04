@@ -27,6 +27,9 @@ SECRET_KEY = 'django-insecure-r3gb32-73qed2#%xux*zc)a)kj2smtnx1d6&t-h%g=!yawq3jj
 DEBUG = True
 
 ALLOWED_HOSTS = []
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Add your frontend URL here
+]
 AUTH_USER_MODEL = "user.User"
 
 # Application definition
@@ -49,6 +52,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'hr',
     'setting',
     'inventory',
@@ -61,15 +65,13 @@ INSTALLED_APPS = [
 
 
 
-    'rest_framework',
-
     'crm',
     'task',
     'notification',
     'pricing',
-    'expense',
     'investor',
     'syncqueue',
+    'corsheaders',
 
 
 ]
@@ -82,6 +84,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'erp.urls'

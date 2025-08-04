@@ -32,13 +32,13 @@ export const ICONS = {
 
 
 export const USERS: User[] = [
-    { id: 1, name: 'Admin User', email: 'admin@pharma.com', password: 'password', role: 'SUPER_ADMIN' },
-    { id: 101, name: 'City Pharmacy Rep', email: 'cp@pharma.com', password: 'password', role: 'CUSTOMER' },
-    { id: 102, name: 'Wellness Drug Rep', email: 'wd@pharma.com', password: 'password', role: 'CUSTOMER' },
-    { id: 201, name: 'Walter House', email: 'warehouse@pharma.com', password: 'password', role: 'WAREHOUSE_ADMIN'},
-    { id: 202, name: 'David Manager', email: 'delivery@pharma.com', password: 'password', role: 'DELIVERY_MANAGER'},
-    { id: 203, name: 'Rachel Officer', email: 'recovery@pharma.com', password: 'password', role: 'RECOVERY_OFFICER'},
-    { id: 301, name: 'Ivy Investor', email: 'investor@pharma.com', password: 'password', role: 'INVESTOR'}
+    { id: 1, username: 'Admin User', email: 'admin@pharma.com', password: 'password', role: 'SUPER_ADMIN' },
+    { id: 101, username: 'City Pharmacy Rep', email: 'cp@pharma.com', password: 'password', role: 'CUSTOMER' },
+    { id: 102, username: 'Wellness Drug Rep', email: 'wd@pharma.com', password: 'password', role: 'CUSTOMER' },
+    { id: 201, username: 'Walter House', email: 'warehouse@pharma.com', password: 'password', role: 'WAREHOUSE_ADMIN'},
+    { id: 202, username: 'David Manager', email: 'delivery@pharma.com', password: 'password', role: 'DELIVERY_MANAGER'},
+    { id: 203, username: 'Rachel Officer', email: 'recovery@pharma.com', password: 'password', role: 'RECOVERY_OFFICER'},
+    { id: 301, username: 'Ivy Investor', email: 'investor@pharma.com', password: 'password', role: 'INVESTOR'}
 ];
 
 export const CITIES: City[] = [

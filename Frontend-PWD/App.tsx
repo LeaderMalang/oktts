@@ -37,12 +37,13 @@ import InvestorDashboard from './components/InvestorDashboard';
 import Investors from './components/Investors';
 import InvestorLedger from './components/InvestorLedger';
 import ROUTES from './routes';
+import { getCurrentUser, logout as logoutService } from './services/auth';
 
 const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUser());
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [saleInvoiceToEdit, setSaleInvoiceToEdit] = useState<Order | null>(null);
@@ -64,6 +65,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    logoutService();
     setCurrentUser(null);
     setCurrentPage('login');
   };

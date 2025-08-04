@@ -29,7 +29,7 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ setCurrentPage, c
     return (
         <div className="space-y-8">
             <section>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Welcome back, {currentUser.name.split(' ')[0]}!</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Welcome back, {currentUser.username.split(' ')[0]}!</h2>
                 <p className="text-gray-500 dark:text-gray-400">Here's a summary of your account.</p>
             </section>
             

@@ -77,6 +77,7 @@ const MyLeave: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         const payload = { ...requestData, employee: currentUser.id };
         const saved = await createLeaveRequest(payload);
         setLeaveRequests(prev => [saved, ...prev]);
+
         setIsModalOpen(false);
     };
 
