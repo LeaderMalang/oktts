@@ -1,15 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import { Expense } from '../types';
-import { EXPENSES, EXPENSE_CATEGORIES, ICONS } from '../constants';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Expense, ExpenseCategory } from '../types';
+import { getExpenseCategories, getExpenses, createExpense, updateExpense, deleteExpense } from '../services/expense';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
 
-const ExpenseFormModal: React.FC<{ expense?: Expense; onClose: () => void; onSave: (expense: Omit<Expense, 'id'>) => void; }> = ({ expense, onClose, onSave }) => {
+const ExpenseFormModal: React.FC<{ categories: ExpenseCategory[]; expense?: Expense; onClose: () => void; onSave: (expense: Omit<Expense, 'id'>) => void; }> = ({ categories, expense, onClose, onSave }) => {
     const [formData, setFormData] = useState<Omit<Expense, 'id'>>(
-        expense || { date: new Date().toISOString().split('T')[0], categoryId: EXPENSE_CATEGORIES[0]?.id, amount: 0, payee: '', description: '', paymentMethod: 'Cash' }
+        expense || { date: new Date().toISOString().split('T')[0], categoryId: categories[0]?.id, amount: 0, payee: '', description: '', paymentMethod: 'Cash' }
     );
+
+    useEffect(() => {
+        if (!expense && categories.length > 0) {
+            setFormData(prev => ({ ...prev, categoryId: categories[0].id }));
+        }
+    }, [categories, expense]);
 
     const handleChange = (name: string, value: any) => { setFormData(prev => ({ ...prev, [name]: value })); };
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { handleChange(e.target.name, e.target.value); };
@@ -20,7 +26,7 @@ const ExpenseFormModal: React.FC<{ expense?: Expense; onClose: () => void; onSav
             <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg">
                 <div className="p-6 border-b dark:border-gray-700"><h3 className="text-xl font-semibold">{expense ? 'Edit' : 'Add'} Expense</h3></div>
                 <fieldset className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div><label className="block text-sm font-medium mb-1">Category</label><SearchableSelect options={EXPENSE_CATEGORIES.map(c => ({ value: c.id, label: c.name }))} value={formData.categoryId} onChange={val => handleChange('categoryId', val)} /></div>
+                    <div><label className="block text-sm font-medium mb-1">Category</label><SearchableSelect options={categories.map(c => ({ value: c.id, label: c.name }))} value={formData.categoryId} onChange={val => handleChange('categoryId', val)} /></div>
                     <div><label className="block text-sm font-medium mb-1">Payment Method</label><select name="paymentMethod" value={formData.paymentMethod} onChange={handleInputChange} className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200"><option value="Cash">Cash</option><option value="Credit">Credit</option></select></div>
                     <div><label className="block text-sm font-medium mb-1">Date</label><input type="date" name="date" value={formData.date} onChange={handleInputChange} className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></div>
                     <div><label className="block text-sm font-medium mb-1">Amount</label><input type="number" name="amount" value={formData.amount} onChange={e => handleChange('amount', parseFloat(e.target.value))} step="0.01" className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></div>
@@ -38,28 +44,62 @@ const ExpenseFormModal: React.FC<{ expense?: Expense; onClose: () => void; onSav
 
 
 const Expenses: React.FC = () => {
-    const [expenses, setExpenses] = useState<Expense[]>(EXPENSES);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('All');
 
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const [cats, exps] = await Promise.all([getExpenseCategories(), getExpenses()]);
+                setCategories(cats);
+                setExpenses(exps);
+            } catch (err) {
+                console.error('Failed to load expenses data', err);
+            }
+        };
+        load();
+    }, []);
+
     const handleSaveExpense = async (expense: Omit<Expense, 'id'>) => {
         const payload = editingExpense ? { ...editingExpense, ...expense } : expense;
-        const method = editingExpense ? 'PUT' : 'POST';
-        const endpoint = editingExpense ? `/api/expenses/${editingExpense.id}` : '/api/expenses';
-
-        await addToSyncQueue({ endpoint, method, payload });
-        await registerSync();
-        
-        if (editingExpense) {
-            setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...editingExpense, ...expense } : e));
-        } else {
-            setExpenses([...expenses, { ...expense, id: Math.max(...expenses.map(e => e.id), 0) + 1 }]);
+        try {
+            if (editingExpense) {
+                const updated = await updateExpense(editingExpense.id, payload);
+                setExpenses(expenses.map(e => e.id === editingExpense.id ? updated : e));
+            } else {
+                const created = await createExpense(payload);
+                setExpenses([...expenses, created]);
+            }
+        } catch (err) {
+            console.error('Failed to sync expense, saving to queue', err);
+            const endpoint = editingExpense ? `/api/expenses/expenses/${editingExpense.id}/` : '/api/expenses/expenses/';
+            const method = editingExpense ? 'PUT' : 'POST';
+            await addToSyncQueue({ endpoint, method, payload });
+            await registerSync();
+            if (editingExpense) {
+                setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...editingExpense, ...expense } : e));
+            } else {
+                setExpenses([...expenses, { ...expense, id: Math.max(...expenses.map(e => e.id), 0) + 1 }]);
+            }
         }
 
         setIsModalOpen(false);
         setEditingExpense(undefined);
+    };
+
+    const handleDeleteExpense = async (id: number) => {
+        try {
+            await deleteExpense(id);
+        } catch (err) {
+            console.error('Failed to delete expense, saving to queue', err);
+            await addToSyncQueue({ endpoint: `/api/expenses/expenses/${id}/`, method: 'DELETE', payload: null });
+            await registerSync();
+        }
+        setExpenses(expenses.filter(e => e.id !== id));
     };
 
     const openModal = (expense?: Expense) => {
@@ -68,13 +108,13 @@ const Expenses: React.FC = () => {
     }
     
     const filteredExpenses = useMemo(() => {
-        return expenses.filter(exp => 
+        return expenses.filter(exp =>
             (exp.payee.toLowerCase().includes(searchTerm.toLowerCase()) || exp.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (categoryFilter === 'All' || exp.categoryId === Number(categoryFilter))
         );
     }, [expenses, searchTerm, categoryFilter]);
 
-    const getCategoryName = (id: number) => EXPENSE_CATEGORIES.find(c => c.id === id)?.name || 'N/A';
+    const getCategoryName = (id: number) => categories.find(c => c.id === id)?.name || 'N/A';
     
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -86,7 +126,7 @@ const Expenses: React.FC = () => {
                 <SearchInput placeholder="Search payee or description..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 <FilterControls.Select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
                     <option value="All">All Categories</option>
-                    {EXPENSE_CATEGORIES.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </FilterControls.Select>
                 <FilterControls.ResetButton onClick={() => { setSearchTerm(''); setCategoryFilter('All'); }} />
             </FilterBar>
@@ -108,13 +148,16 @@ const Expenses: React.FC = () => {
                                 <td className="px-6 py-4 text-sm">{getCategoryName(exp.categoryId)}</td>
                                 <td className="px-6 py-4 text-sm font-medium">{exp.payee}</td>
                                 <td className="px-6 py-4 text-sm text-right">Rs. {exp.amount.toFixed(2)}</td>
-                                <td className="px-6 py-4 text-right text-sm"><button onClick={() => openModal(exp)} className="text-blue-600 hover:underline">Edit</button></td>
+                                <td className="px-6 py-4 text-right text-sm">
+                                    <button onClick={() => openModal(exp)} className="text-blue-600 hover:underline mr-2">Edit</button>
+                                    <button onClick={() => handleDeleteExpense(exp.id)} className="text-red-600 hover:underline">Delete</button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-            {isModalOpen && <ExpenseFormModal expense={editingExpense} onClose={() => setIsModalOpen(false)} onSave={handleSaveExpense} />}
+            {isModalOpen && <ExpenseFormModal categories={categories} expense={editingExpense} onClose={() => setIsModalOpen(false)} onSave={handleSaveExpense} />}
         </div>
     );
 };
