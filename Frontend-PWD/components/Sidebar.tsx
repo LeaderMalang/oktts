@@ -110,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, curren
             <NavItem icon={ICONS.dashboard} label="Dashboard" to={ROUTES.dashboard.path} onClick={handleNavClick} />
             <NavHeader>Orders</NavHeader>
             <NavItem icon={ICONS.orders} label="Delivery Management" to={ROUTES['order-management'].path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.list} label="Delivery Assignments" to={ROUTES['delivery-assignments'].path} onClick={handleNavClick} />
             <NavItem icon={ICONS.tasks} label="My Tasks" to={ROUTES.tasks.path} onClick={handleNavClick} />
             <NavItem icon={ICONS.leave} label="My Leave" to={ROUTES['my-leave'].path} onClick={handleNavClick} />
           </>
