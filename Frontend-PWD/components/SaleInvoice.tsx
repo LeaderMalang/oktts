@@ -3,6 +3,7 @@ import { Order, InvoiceItem, Party, Area, PriceListItem, Task } from '../types';
 import { PRODUCTS, BATCHES, ICONS, CITIES, AREAS, EMPLOYEES, COMPANIES, PARTIES_DATA, PRICE_LISTS, PRICE_LIST_ITEMS } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { createSaleInvoice } from '../services/sale';
 
 interface SaleInvoiceProps {
   invoiceToEdit: Order | null;
@@ -27,9 +28,10 @@ const FormSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ c
 );
 
 const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose }) => {
+  const initialId = useMemo(() => new Date().getTime().toString(), []);
   const [invoice, setInvoice] = useState<Omit<Order, 'customer'>>({
-    id: new Date().getTime().toString(),
-    invoiceNo: `INV-${Math.floor(Math.random() * 10000)}`,
+    id: initialId,
+    invoiceNo: `INV-00${initialId}`,
     status: 'Draft',
     userId: 0, 
     cityId: null,
@@ -237,20 +239,36 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
     const payload = { ...finalInvoice };
     payload.items.forEach(item => delete (item as any).id);
 
-    const endpoint = isEditMode ? `/api/orders/${finalInvoice.id}` : '/api/orders';
-    const method = isEditMode ? 'PUT' : 'POST';
-
-    await addToSyncQueue({ endpoint, method, payload });
-    
-    if (createTask && taskDetails.title && taskDetails.assignedTo && taskDetails.dueDate) {
-        const finalTask = {
-            ...taskDetails,
-            relatedTo: { type: 'SaleInvoice', id: finalInvoice.id, name: finalInvoice.invoiceNo }
+    if (isEditMode) {
+        await addToSyncQueue({ endpoint: `/api/orders/${finalInvoice.id}`, method: 'PUT', payload });
+        if (createTask && taskDetails.title && taskDetails.assignedTo && taskDetails.dueDate) {
+            const finalTask = {
+                ...taskDetails,
+                relatedTo: { type: 'SaleInvoice', id: finalInvoice.id, name: finalInvoice.invoiceNo }
+            };
+            await addToSyncQueue({ endpoint: '/api/tasks', method: 'POST', payload: finalTask });
         }
-        await addToSyncQueue({ endpoint: '/api/tasks', method: 'POST', payload: finalTask });
+        await registerSync();
+        handleClose();
+        return;
     }
 
-    await registerSync();
+    try {
+        const saved = await createSaleInvoice(finalInvoice);
+        if (saved.id) {
+            setInvoice(prev => ({ ...prev, id: saved.id.toString(), invoiceNo: `INV-00${saved.id}` }));
+        }
+    } catch (error) {
+        await addToSyncQueue({ endpoint: '/api/orders', method: 'POST', payload });
+        if (createTask && taskDetails.title && taskDetails.assignedTo && taskDetails.dueDate) {
+            const finalTask = {
+                ...taskDetails,
+                relatedTo: { type: 'SaleInvoice', id: finalInvoice.id, name: finalInvoice.invoiceNo }
+            };
+            await addToSyncQueue({ endpoint: '/api/tasks', method: 'POST', payload: finalTask });
+        }
+        await registerSync();
+    }
     handleClose();
   };
 

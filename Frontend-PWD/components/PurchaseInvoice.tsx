@@ -28,8 +28,9 @@ const FormSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ c
 );
 
 const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, handleClose }) => {
+  const initialId = useMemo(() => new Date().getTime().toString(), []);
   const [invoice, setInvoice] = useState<Omit<PurchaseInvoice, 'supplier' | 'id'>>({
-    invoiceNo: '',
+    invoiceNo: `INV-00${initialId}`,
     status: 'Pending',
     date: new Date().toISOString().split('T')[0],
     companyInvoiceNumber: '',
@@ -145,17 +146,22 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
 
   const handleSubmit = async () => {
     const finalInvoice: PurchaseInvoice = {
-      id: isEditMode ? invoiceToEdit!.id : new Date().getTime().toString(),
+      id: isEditMode ? invoiceToEdit!.id : initialId,
       ...invoice,
       supplier: supplier || null,
     };
 
-    if (isEditMode) {
-      await updatePurchaseInvoice(finalInvoice.id, finalInvoice);
-    } else {
-      await createPurchaseInvoice(finalInvoice);
+    try {
+      const saved = isEditMode
+        ? await updatePurchaseInvoice(finalInvoice.id, finalInvoice)
+        : await createPurchaseInvoice(finalInvoice);
+      if (saved?.id) {
+        setInvoice(prev => ({ ...prev, invoiceNo: `INV-00${saved.id}` }));
+      }
+      handleClose();
+    } catch (error) {
+      console.error('Error saving purchase invoice:', error);
     }
-    handleClose();
   };
 
   return (
@@ -163,6 +169,7 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
       <fieldset className="p-4 border dark:border-gray-700 rounded-md">
         <legend className="px-2 text-lg font-semibold">Purchase Header</legend>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <FormField label="Inv. #"><FormInput type="text" value={invoice.invoiceNo} readOnly /></FormField>
             <FormField label="Supplier"><SearchableSelect options={SUPPLIERS.map(s => ({ value: s.id, label: s.name }))} value={supplierId} onChange={val => setSupplierId(val as number)} /></FormField>
             <FormField label="Invoice Date"><FormInput type="date" id="date" value={invoice.date} onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))} /></FormField>
             <FormField label="Company Inv. #"><FormInput type="text" id="companyInvoiceNumber" placeholder="Supplier invoice number" value={invoice.companyInvoiceNumber} onChange={(e) => setInvoice(prev => ({ ...prev, companyInvoiceNumber: e.target.value }))}/></FormField>
