@@ -32,6 +32,7 @@ export const ROUTES: Record<Page, RouteMeta> = {
   management: { path: '/management', title: 'System Management' },
   expenses: { path: '/expenses', title: 'Expense Management' },
   'my-leave': { path: '/my-leave', title: 'My Leave Requests' },
+  'leave-balances': { path: '/leave-balances', title: 'Leave Balances' },
   ledger: { path: '/ledger', title: 'Customer Ledger' },
   login: { path: '/login', title: 'Login' },
   register: { path: '/register', title: 'Register' },

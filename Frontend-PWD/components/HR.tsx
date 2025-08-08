@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Employee, LeaveRequest, AttendanceRecord, EmployeeRole, LeaveStatus } from '../types';
+import ROUTES from '../routes';
 import { ICONS } from '../constants';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
@@ -33,6 +35,7 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
 
 // Main HR Component
 const HR: React.FC = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<HRTab>('employees');
 
     // Lifted state for all HR data
@@ -116,6 +119,7 @@ const HR: React.FC = () => {
                     <TabButton active={activeTab === 'employees'} onClick={() => setActiveTab('employees')}>Employees</TabButton>
                     <TabButton active={activeTab === 'leaves'} onClick={() => setActiveTab('leaves')}>Leave Requests</TabButton>
                     <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')}>Attendance</TabButton>
+                    <TabButton active={false} onClick={() => navigate(ROUTES['leave-balances'].path)}>Leave Balances</TabButton>
                 </nav>
             </div>
             <div>{renderTabContent()}</div>

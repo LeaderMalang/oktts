@@ -31,6 +31,7 @@ import { NOTIFICATIONS } from './constants';
 import RecoveryOfficerDashboard from './components/RecoveryOfficerDashboard';
 import CreditRecovery from './components/CreditRecovery';
 import MyLeave from './components/MyLeave';
+import LeaveBalances from './components/LeaveBalances';
 import Ledger from './components/Ledger';
 import StockAudit from './components/StockAudit';
 import InvestorDashboard from './components/InvestorDashboard';
@@ -196,6 +197,7 @@ const App: React.FC = () => {
             <Route path={ROUTES.management.path} element={<Management />} />
             <Route path={ROUTES.expenses.path} element={<Expenses />} />
             <Route path={ROUTES['my-leave'].path} element={<MyLeave currentUser={currentUser} />} />
+            <Route path={ROUTES['leave-balances'].path} element={<LeaveBalances />} />
             <Route path={ROUTES.ledger.path} element={<Ledger currentUser={currentUser} />} />
             <Route path="*" element={<Navigate to={ROUTES.dashboard.path} />} />
           </Routes>

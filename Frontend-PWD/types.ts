@@ -39,6 +39,7 @@ export type Page =
   | 'recovery-officer-dashboard'
   | 'credit-recovery'
   | 'my-leave'
+  | 'leave-balances'
   | 'ledger'
   | 'stock-audit'
   | 'investors'
