@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Order, InvoiceItem, Party, Area, PriceListItem, Task } from '../types';
-import { PRODUCTS, BATCHES, ICONS, CITIES, AREAS, EMPLOYEES, COMPANIES, PARTIES_DATA, PRICE_LISTS, PRICE_LIST_ITEMS } from '../constants';
+import { Order, InvoiceItem, Party, Area, PriceListItem, Task, Product, City } from '../types';
+import { BATCHES, ICONS, EMPLOYEES, COMPANIES, PRICE_LISTS, PRICE_LIST_ITEMS } from '../constants';
+import { fetchProducts, fetchParties } from '../services/inventory';
+import { fetchCities, fetchAreas } from '../services/settings';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
 
@@ -48,6 +50,10 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
     paidAmount: 0,
   });
   const [customerId, setCustomerId] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   
   const [selectedCustomerDetails, setSelectedCustomerDetails] = useState<{ creditLimit: number, currentBalance: number, priceListId: number | null, priceListItems: PriceListItem[] } | null>(null);
   const [createTask, setCreateTask] = useState(false);
@@ -66,17 +72,31 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
     }
   }, [invoiceToEdit, isEditMode]);
 
+  useEffect(() => {
+    fetchProducts().then(setProducts).catch(() => setProducts([]));
+    fetchParties().then(setParties).catch(() => setParties([]));
+    Promise.all([fetchCities(), fetchAreas()])
+      .then(([c, a]) => {
+        setCities(c);
+        setAreas(a);
+      })
+      .catch(() => {
+        setCities([]);
+        setAreas([]);
+      });
+  }, []);
+
 
   // Derived state for filtered dropdowns
   const filteredAreas = useMemo(() => {
     if (!invoice.cityId) return [];
-    return AREAS.filter(a => a.cityId === invoice.cityId);
-  }, [invoice.cityId]);
+    return areas.filter(a => a.cityId === invoice.cityId);
+  }, [invoice.cityId, areas]);
 
   const filteredCustomers = useMemo(() => {
     if (!invoice.cityId || !invoice.areaId) return [];
-    return PARTIES_DATA.filter(p => p.partyType === 'customer' && p.cityId === invoice.cityId && p.areaId === invoice.areaId);
-  }, [invoice.cityId, invoice.areaId]);
+    return parties.filter(p => p.partyType === 'customer' && p.cityId === invoice.cityId && p.areaId === invoice.areaId);
+  }, [invoice.cityId, invoice.areaId, parties]);
 
   // Effect to calculate totals
   useEffect(() => {
@@ -109,7 +129,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
     return null;
   }, [invoice.grandTotal, selectedCustomerDetails, invoice.paymentMethod]);
   
-  const customer = useMemo(() => PARTIES_DATA.find(p => p.id === customerId), [customerId]);
+  const customer = useMemo(() => parties.find(p => p.id === customerId), [customerId, parties]);
 
   useEffect(() => {
       if (customer) {
@@ -117,8 +137,8 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
       }
   }, [customer, invoice.invoiceNo]);
 
-   useEffect(() => {
-      const customerParty = PARTIES_DATA.find(p => p.id === customerId && p.partyType === 'customer');
+  useEffect(() => {
+      const customerParty = parties.find(p => p.id === customerId && p.partyType === 'customer');
       if (customerParty) {
           const priceListId = customerParty.priceListId || null;
           setSelectedCustomerDetails({
@@ -132,7 +152,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
               ...prev,
               items: prev.items.map(item => {
                   if(!item.productId) return item;
-                  const product = PRODUCTS.find(p => p.id === item.productId);
+                  const product = products.find(p => p.id === item.productId);
                   if (!product) return item;
                   const customPriceItem = priceListId ? PRICE_LIST_ITEMS.find(pli => pli.priceListId === priceListId && pli.productId === product.id) : undefined;
                   const rate = customPriceItem ? customPriceItem.customPrice : product.retailPrice;
@@ -148,7 +168,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
       } else {
           setSelectedCustomerDetails(null);
       }
-  }, [customerId]);
+  }, [customerId, parties, products]);
 
   const handleHeaderChange = (field: keyof typeof invoice, value: any) => {
     setInvoice(prev => {
@@ -192,7 +212,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
     const newItems = invoice.items.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
-        const product = PRODUCTS.find(p => p.id === updatedItem.productId);
+        const product = products.find(p => p.id === updatedItem.productId);
 
         if (field === 'productId' || field === 'batchId') {
             updatedItem.batchId = field === 'productId' ? null : updatedItem.batchId;
@@ -230,7 +250,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
 
     const finalInvoice: Order = {
         ...invoice,
-        customer: PARTIES_DATA.find(p => p.id === customerId) || null,
+        customer: parties.find(p => p.id === customerId) || null,
         userId: customerId,
     };
 
@@ -269,7 +289,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
       <fieldset className="border dark:border-gray-700 p-4 rounded-md">
         <legend className="px-2 text-lg font-semibold">Invoice Header</legend>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <FormField label="City"><SearchableSelect options={CITIES.map(c => ({ value: c.id, label: c.name }))} value={invoice.cityId} onChange={val => handleHeaderChange('cityId', val)} /></FormField>
+            <FormField label="City"><SearchableSelect options={cities.map(c => ({ value: c.id, label: c.name }))} value={invoice.cityId} onChange={val => handleHeaderChange('cityId', val)} /></FormField>
             <FormField label="Area"><SearchableSelect options={filteredAreas.map(a => ({ value: a.id, label: a.name }))} value={invoice.areaId} onChange={val => handleHeaderChange('areaId', val)} disabled={!invoice.cityId} /></FormField>
             <FormField label="Client"><SearchableSelect options={filteredCustomers.map(c => ({ value: c.id, label: c.name }))} value={customerId} onChange={val => setCustomerId(val as number)} disabled={!invoice.areaId} /></FormField>
             <FormField label="Supplying Man"><SearchableSelect options={EMPLOYEES.filter(e => e.role === 'SALES' || e.role === 'DELIVERY').map(e => ({ value: e.id, label: e.name }))} value={invoice.supplyingManId} onChange={val => handleHeaderChange('supplyingManId', val)} /></FormField>
@@ -310,7 +330,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
                         const selectedBatch = BATCHES.find(b => b.id === item.batchId);
                         return (
                             <tr key={item.id}>
-                                <td className="p-1" style={{minWidth: '200px'}}><SearchableSelect options={PRODUCTS.map(p => ({ value: p.id, label: p.name }))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
+                                <td className="p-1" style={{minWidth: '200px'}}><SearchableSelect options={products.map(p => ({ value: p.id, label: p.name }))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
                                 <td className="p-1" style={{minWidth: '150px'}}><SearchableSelect options={(availableBatches.get(item.productId || 0) || []).map(b => ({ value: b.id, label: b.batchNo }))} value={item.batchId} onChange={val => handleItemChange(item.id, 'batchId', val)} disabled={!item.productId} /></td>
                                 <td className="p-1 text-sm text-gray-500 dark:text-gray-400" style={{minWidth: '110px'}}>{selectedBatch?.expiryDate || '-'}</td>
                                 <td className="p-1 text-sm text-gray-500 dark:text-gray-400">{selectedBatch?.stock || '-'}</td>

@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from .models import (
     SaleInvoice,
@@ -91,6 +93,16 @@ def sale_invoice_detail(request, pk):
 class SaleInvoiceViewSet(viewsets.ModelViewSet):
     queryset = SaleInvoice.objects.all().prefetch_related('items', 'recovery_logs')
     serializer_class = SaleInvoiceSerializer
+
+    @action(detail=False, methods=["get"], url_path="by-number/(?P<invoice_no>[^/.]+)")
+    def retrieve_by_number(self, request, invoice_no=None):
+        """Retrieve a sale invoice using its invoice_no."""
+        invoice = get_object_or_404(
+            SaleInvoice.objects.all().prefetch_related("items", "recovery_logs"),
+            invoice_no=invoice_no,
+        )
+        serializer = self.get_serializer(invoice)
+        return Response(serializer.data)
 
 
 class SaleReturnViewSet(viewsets.ModelViewSet):

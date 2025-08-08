@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SaleReturn, SaleReturnItem } from '../types';
+
+import { SaleReturn, SaleReturnItem, Order } from '../types';
 import { PARTIES_DATA, PRODUCTS, ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
-import { createSaleReturn } from '../services/sale';
+import { createSaleReturn, listSaleInvoices, fetchSaleInvoiceByNumber } from '../services/sale';
+
+import { Product, Party } from '../types';
+
+
+
+import { fetchProducts, fetchParties } from '../services/inventory';
+
 
 interface SaleReturnProps {
   returnToEdit: SaleReturn | null;
@@ -23,6 +31,15 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
   });
   const [customerId, setCustomerId] = useState<number | null>(null);
 
+  const [invoices, setInvoices] = useState<Order[]>([]);
+  const [selectedInvoiceNo, setSelectedInvoiceNo] = useState<string | null>(null);
+  const [invoiceItems, setInvoiceItems] = useState<{productId: number; batchNo: string; quantity: number;}[]>([]);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
+  const customers = useMemo(() => parties.filter(p => p.partyType === 'customer'), [parties]);
+
+
   const isEditMode = useMemo(() => !!returnToEdit, [returnToEdit]);
 
   useEffect(() => {
@@ -34,9 +51,54 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
   }, [returnToEdit, isEditMode]);
 
   useEffect(() => {
+
+    listSaleInvoices().then(setInvoices).catch(() => {});
+
+    fetchProducts().then(setProducts).catch(() => setProducts([]));
+    fetchParties().then(setParties).catch(() => setParties([]));
+
+  }, []);
+
+  useEffect(() => {
     const totalAmount = sReturn.items.reduce((acc, item) => acc + item.amount, 0);
     setSReturn(prev => ({ ...prev, totalAmount }));
   }, [sReturn.items]);
+
+  const handleInvoiceSelect = async (val: string | number | null) => {
+    const invoiceNo = val ? String(val) : null;
+    setSelectedInvoiceNo(invoiceNo);
+    if (invoiceNo) {
+      try {
+        const inv = await fetchSaleInvoiceByNumber(invoiceNo);
+        setCustomerId(inv.customer as unknown as number);
+        setSReturn(prev => ({
+          ...prev,
+          warehouseId: inv.warehouse as unknown as number,
+          items: inv.items.map((it: any) => ({
+            id: String(it.id),
+            productId: it.product,
+            batchNo: String(it.batch),
+            expiryDate: '',
+            quantity: it.quantity,
+            rate: Number(it.rate),
+            discount1: Number(it.discount1),
+            discount2: Number(it.discount2),
+            amount: Number(it.amount),
+            netAmount: Number(it.net_amount),
+          })),
+        }));
+        setInvoiceItems(inv.items.map((it: any) => ({
+          productId: it.product,
+          batchNo: String(it.batch),
+          quantity: it.quantity,
+        })));
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      setInvoiceItems([]);
+    }
+  };
 
   const handleAddItem = () => {
     const newItem: SaleReturnItem = { id: Date.now().toString(), productId: null, batchNo: '', expiryDate: '', quantity: 1, rate: 0, discount1: 0, discount2: 0, amount: 0, netAmount: 0 };
@@ -50,7 +112,7 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'productId') {
-            const product = PRODUCTS.find(p => p.id === Number(value));
+            const product = products.find(p => p.id === Number(value));
             updatedItem.rate = product ? product.tradePrice : 0;
         }
         updatedItem.amount = updatedItem.quantity * updatedItem.rate;
@@ -62,11 +124,30 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
     setSReturn(prev => ({ ...prev, items: newItems }));
   };
   
+  const validateItems = () => {
+    if (!selectedInvoiceNo) return true;
+    for (const item of sReturn.items) {
+      const match = invoiceItems.find(
+        inv => inv.productId === item.productId && inv.batchNo === String(item.batchNo)
+      );
+      if (!match) {
+        alert('Return item not in original invoice');
+        return false;
+      }
+      if (item.quantity > match.quantity) {
+        alert('Return quantity exceeds sold quantity');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateItems()) return;
     const finalReturn: SaleReturn = {
         id: isEditMode ? returnToEdit.id : new Date().getTime().toString(),
         ...sReturn,
-        customer: PARTIES_DATA.find(p => p.id === customerId) || null
+        customer: parties.find(p => p.id === customerId) || null
     };
 
     await createSaleReturn(finalReturn);
@@ -77,8 +158,11 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:p-8 space-y-6">
         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
             <legend className="px-2 text-lg font-semibold">Return Details</legend>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div><label className="block text-sm font-medium mb-1">Customer</label><SearchableSelect options={PARTIES_DATA.filter(p => p.partyType === 'customer').map(c=>({value: c.id, label:c.name}))} value={customerId} onChange={val => setCustomerId(val as number)} /></div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div><label className="block text-sm font-medium mb-1">Invoice No</label><SearchableSelect options={invoices.map(inv => ({value: inv.invoiceNo, label: inv.invoiceNo}))} value={selectedInvoiceNo} onChange={handleInvoiceSelect} placeholder="Select Invoice" /></div>
+                <div><label className="block text-sm font-medium mb-1">Customer</label><SearchableSelect options={PARTIES_DATA.filter(p => p.partyType === 'customer').map(c=>({value: c.id, label:c.name}))} value={customerId} onChange={val => setCustomerId(val as number)} disabled={!!selectedInvoiceNo} /></div>
+
                 <div><label className="block text-sm font-medium mb-1">Return Date</label><FormInput type="date" value={sReturn.date} onChange={(e) => setSReturn(prev => ({ ...prev, date: e.target.value }))} /></div>
                 <div><label className="block text-sm font-medium mb-1">Return #</label><FormInput type="text" readOnly value={sReturn.returnNo} className="bg-gray-100 dark:bg-gray-700" /></div>
             </div>
@@ -101,7 +185,7 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                         {sReturn.items.map(item => (
                         <tr key={item.id}>
-                            <td className="p-1" style={{minWidth: '250px'}}><SearchableSelect options={PRODUCTS.map(p=>({value:p.id, label:p.name}))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
+                            <td className="p-1" style={{minWidth: '250px'}}><SearchableSelect options={products.map(p=>({value:p.id, label:p.name}))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
                             <td className="p-1"><FormInput type="text" placeholder="Batch No." value={item.batchNo} onChange={(e) => handleItemChange(item.id, 'batchNo', e.target.value)} style={{minWidth: '120px'}} /></td>
                             <td className="p-1"><FormInput type="number" value={item.quantity} onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))} min="1" style={{width: '100px'}} /></td>
                             <td className="p-1"><FormInput type="number" value={item.rate} onChange={(e) => handleItemChange(item.id, 'rate', parseFloat(e.target.value))} min="0" step="0.01" style={{width: '120px'}} /></td>
