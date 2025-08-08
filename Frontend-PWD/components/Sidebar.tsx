@@ -77,6 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, curren
             <NavItem icon={ICONS.inventory} label="Inventory" to={ROUTES.inventory.path} onClick={handleNavClick} />
             <NavItem icon={ICONS.stock_audit} label="Stock Audit" to={ROUTES['stock-audit'].path} onClick={handleNavClick} />
             <NavItem icon={ICONS.hr} label="HR" to={ROUTES.hr.path} onClick={handleNavClick} />
+            <NavItem icon={ICONS.list} label="Contracts" to={ROUTES.contracts.path} onClick={handleNavClick} />
             <NavHeader>Finance</NavHeader>
             <NavItem icon={ICONS.expense} label="Expenses" to={ROUTES.expenses.path} onClick={handleNavClick} />
             <NavItem icon={ICONS.investor} label="Investors" to={ROUTES.investors.path} onClick={handleNavClick} />

@@ -9,6 +9,7 @@ import SaleInvoice from './components/SaleInvoice';
 import PurchaseInvoice from './components/PurchaseInvoice';
 import Reports from './components/Reports';
 import HR from './components/HR';
+import EmployeeContracts from './components/EmployeeContracts';
 import Management from './components/Management';
 import { Page, User, Order, PurchaseInvoice as PurchaseInvoiceType, SaleReturn as SaleReturnType, PurchaseReturn as PurchaseReturnType } from './types';
 import Header from './components/Header';
@@ -191,6 +192,7 @@ const App: React.FC = () => {
             <Route path={ROUTES.inventory.path} element={<Inventory />} />
             <Route path={ROUTES['stock-audit'].path} element={<StockAudit />} />
             <Route path={ROUTES.hr.path} element={<HR />} />
+            <Route path={ROUTES.contracts.path} element={<EmployeeContracts />} />
             <Route path={ROUTES.crm.path} element={<CRM />} />
             <Route path={ROUTES.tasks.path} element={<Tasks currentUser={currentUser} />} />
             <Route path={ROUTES.management.path} element={<Management />} />
