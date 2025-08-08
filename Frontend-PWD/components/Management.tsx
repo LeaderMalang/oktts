@@ -53,10 +53,10 @@ const Management: React.FC = () => {
                     managementService.getEntities<Company>('companies'),
                     managementService.getEntities<ProductGroup>('product-groups'),
                     managementService.getEntities<Distributor>('distributors'),
-                    //managementService.getEntities<Product>('products'),
-                   // managementService.getEntities<Party>('parties'),
-                   // managementService.getEntities<ChartOfAccount>('accounts'),
-                   // managementService.getEntities<PriceList>('price-lists'),
+                    managementService.getProducts(),
+                    managementService.getParties(),
+                    managementService.getAccounts(),
+                    managementService.getPriceLists(),
                 ]);
                 console.log('Fetched management data:', {citiesData, branchesData, warehousesData, areasData, companiesData, productGroupsData, distributorsData, productsData, partiesData, accountsData, priceListsData});
                 setBranches(branchesData);
@@ -66,10 +66,10 @@ const Management: React.FC = () => {
                 setCompanies(companiesData);
                 setProductGroups(productGroupsData);
                 setDistributors(distributorsData);
-                //setProducts(productsData);
-                //setParties(partiesData);
-                //setAccounts(accountsData);
-                //setPriceLists(priceListsData);
+                setProducts(productsData);
+                setParties(partiesData);
+                setAccounts(accountsData);
+                setPriceLists(priceListsData);
             } catch (err) {
                 console.error('Failed to load management data', err);
             }
