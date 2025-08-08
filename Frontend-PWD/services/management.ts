@@ -21,13 +21,13 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 export const getEntities = <T>(entity: string) =>
     request<T[]>(`${API_BASE}/${entity}/`);
 
-export const createEntity = <T>(entity: string, data: Partial<T>) =>{
+export const createEntity = <T>(entity: string, data: Partial<T>) => {
     console.log(entity, data);
-    request<T>(`${API_BASE}/${entity}/`, {
+    return request<T>(`${API_BASE}/${entity}/`, {
         method: 'POST',
         body: JSON.stringify(data),
     });
-}
+};
     
 
 export const updateEntity = <T>(entity: string, id: number, data: Partial<T>) =>
