@@ -18,9 +18,18 @@ export type Page =
   | 'purchase-invoices' 
   | 'new-purchase-invoice' 
   | 'reports' 
-  | 'inventory' 
-  | 'hr' 
-  | 'management' 
+
+  | 'inventory'
+  | 'hr'
+  | 'sales-targets'
+
+
+  | 'contracts'
+
+  | 'payroll-slips'
+
+
+  | 'management'
   | 'sale-invoices' 
   | 'new-sale-return' 
   | 'new-purchase-return' 
