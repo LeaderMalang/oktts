@@ -1,6 +1,6 @@
 import { Product, Party } from '../types';
 
-const API_BASE = 'http://127.0.0.1:8000/inventory';
+const API_BASE = 'http://127.0.0.1:8000/api/inventory';
 
 async function request<T>(url: string): Promise<T> {
   const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
