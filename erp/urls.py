@@ -38,8 +38,8 @@ urlpatterns = [
     path('api/sync/', include('syncqueue.urls')),
 
     path('api/hr/', include('hr.urls')),
-
     path('api/user/', include('user.urls')),
+    path('api/management/', include('setting.urls')),
 
 
 
