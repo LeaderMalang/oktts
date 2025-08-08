@@ -1,11 +1,10 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Company, ProductGroup, Distributor, City, Branch, Warehouse, Party, ChartOfAccount, Product, PartyType, AccountTypeName, Area, PriceList, PriceListItem } from '../types';
-import { ICONS, COMPANIES, PRODUCT_GROUPS, DISTRIBUTORS, CITIES, BRANCHES_DATA, WAREHOUSES_DATA, PARTIES_DATA, CHART_OF_ACCOUNTS_DATA, PRODUCTS, AREAS, PRICE_LISTS, PRICE_LIST_ITEMS } from '../constants';
+import { ICONS } from '../constants';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 import SearchableSelect from './SearchableSelect';
-import { addToSyncQueue, registerSync } from '../services/db';
+import * as managementService from '../services/management';
 
 type ManagementTab = 'organization' | 'product_masters' | 'products' | 'parties' | 'pricing' | 'accounting';
 type EntityType = 'branch' | 'warehouse' | 'city' | 'area' | 'company' | 'group' | 'distributor' | 'product' | 'party' | 'account' | 'priceList' | 'priceListItem';
@@ -17,18 +16,18 @@ const Management: React.FC = () => {
     const [activeTab, setActiveTab] = useState<ManagementTab>('organization');
     
     // State for all managed data
-    const [branches, setBranches] = useState<Branch[]>(BRANCHES_DATA);
-    const [warehouses, setWarehouses] = useState<Warehouse[]>(WAREHOUSES_DATA);
-    const [cities, setCities] = useState<City[]>(CITIES);
-    const [areas, setAreas] = useState<Area[]>(AREAS);
-    const [companies, setCompanies] = useState<Company[]>(COMPANIES);
-    const [productGroups, setProductGroups] = useState<ProductGroup[]>(PRODUCT_GROUPS);
-    const [distributors, setDistributors] = useState<Distributor[]>(DISTRIBUTORS);
-    const [products, setProducts] = useState<Product[]>(PRODUCTS);
-    const [parties, setParties] = useState<Party[]>(PARTIES_DATA);
-    const [accounts, setAccounts] = useState<ChartOfAccount[]>(CHART_OF_ACCOUNTS_DATA);
-    const [priceLists, setPriceLists] = useState<PriceList[]>(PRICE_LISTS);
-    const [priceListItems, setPriceListItems] = useState<PriceListItem[]>(PRICE_LIST_ITEMS);
+    const [branches, setBranches] = useState<Branch[]>([]);
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+    const [cities, setCities] = useState<City[]>([]);
+    const [areas, setAreas] = useState<Area[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
+    const [distributors, setDistributors] = useState<Distributor[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [parties, setParties] = useState<Party[]>([]);
+    const [accounts, setAccounts] = useState<ChartOfAccount[]>([]);
+    const [priceLists, setPriceLists] = useState<PriceList[]>([]);
+    const [priceListItems, setPriceListItems] = useState<PriceListItem[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<ModalType>('add');
@@ -42,6 +41,50 @@ const Management: React.FC = () => {
         parties: { searchTerm: '', partyType: 'All' },
         accounts: { searchTerm: '', accountType: 'All' },
     });
+
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const [branchesData, warehousesData, citiesData, areasData, companiesData, productGroupsData, distributorsData, productsData, partiesData, accountsData, priceListsData] = await Promise.all([
+                    managementService.getEntities<Branch>('branches'),
+                    managementService.getEntities<Warehouse>('warehouses'),
+                    managementService.getEntities<City>('cities'),
+                    managementService.getEntities<Area>('areas'),
+                    managementService.getEntities<Company>('companies'),
+                    managementService.getEntities<ProductGroup>('product-groups'),
+                    managementService.getEntities<Distributor>('distributors'),
+                    managementService.getEntities<Product>('products'),
+                    managementService.getEntities<Party>('parties'),
+                    managementService.getEntities<ChartOfAccount>('accounts'),
+                    managementService.getEntities<PriceList>('price-lists'),
+                ]);
+                setBranches(branchesData);
+                setWarehouses(warehousesData);
+                setCities(citiesData);
+                setAreas(areasData);
+                setCompanies(companiesData);
+                setProductGroups(productGroupsData);
+                setDistributors(distributorsData);
+                setProducts(productsData);
+                setParties(partiesData);
+                setAccounts(accountsData);
+                setPriceLists(priceListsData);
+            } catch (err) {
+                console.error('Failed to load management data', err);
+            }
+        }
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        if (selectedPriceList) {
+            managementService.getPriceListItems(selectedPriceList.id)
+                .then(setPriceListItems)
+                .catch(err => console.error('Failed to load price list items', err));
+        } else {
+            setPriceListItems([]);
+        }
+    }, [selectedPriceList]);
 
     const handleFilterChange = (tab: keyof typeof filters, key: string, value: any) => {
         setFilters(prev => ({ ...prev, [tab]: { ...prev[tab], [key]: value } }));
@@ -82,26 +125,46 @@ const Management: React.FC = () => {
     const closeModal = () => setIsModalOpen(false);
 
     const handleSave = async (newItem: any) => {
-        const endpointMap: Record<EntityType, string> = {
-            branch: '/api/management/branches', warehouse: '/api/management/warehouses', city: '/api/management/cities', area: '/api/management/areas',
-            company: '/api/management/companies', group: '/api/management/product-groups', distributor: '/api/management/distributors',
-            product: '/api/management/products', party: '/api/management/parties', account: '/api/management/accounts',
-            priceList: '/api/management/price-lists', priceListItem: `/api/management/price-lists/${newItem.priceListId}/items`,
+        if (!entityType) return;
+        if (entityType === 'priceListItem') {
+            const priceListId = newItem.priceListId;
+            const saved = modalMode === 'add'
+                ? await managementService.createPriceListItem(priceListId, newItem)
+                : await managementService.updatePriceListItem(priceListId, newItem.id, newItem);
+            setPriceListItems(prev => modalMode === 'add'
+                ? [...prev, saved]
+                : prev.map(i => i.id === saved.id ? saved : i));
+            closeModal();
+            return;
+        }
+
+        const slugMap: Record<EntityType, string> = {
+            branch: 'branches', warehouse: 'warehouses', city: 'cities', area: 'areas',
+            company: 'companies', group: 'product-groups', distributor: 'distributors',
+            product: 'products', party: 'parties', account: 'accounts',
+            priceList: 'price-lists', priceListItem: 'price-lists',
         };
-        const endpoint = endpointMap[entityType!];
-        const method = modalMode === 'add' ? 'POST' : 'PUT';
-        await addToSyncQueue({ endpoint, method, payload: newItem });
-        await registerSync();
+        const slug = slugMap[entityType];
+        const saved = modalMode === 'add'
+            ? await managementService.createEntity(slug, newItem)
+            : await managementService.updateEntity(slug, newItem.id, newItem);
+
         const updateState = (setter: React.Dispatch<React.SetStateAction<any[]>>, item: any) => {
-            setter(prev => modalMode === 'add' ? [...prev, { ...item, id: Date.now() }] : prev.map(i => i.id === item.id ? item : i));
+            setter(prev => modalMode === 'add' ? [...prev, item] : prev.map(i => i.id === item.id ? item : i));
         };
+
         switch (entityType) {
-            case 'branch': updateState(setBranches, newItem); break; case 'warehouse': updateState(setWarehouses, newItem); break;
-            case 'city': updateState(setCities, newItem); break; case 'area': updateState(setAreas, newItem); break;
-            case 'company': updateState(setCompanies, newItem); break; case 'group': updateState(setProductGroups, newItem); break;
-            case 'distributor': updateState(setDistributors, newItem); break; case 'product': updateState(setProducts, newItem); break;
-            case 'party': updateState(setParties, newItem); break; case 'account': updateState(setAccounts, newItem); break;
-            case 'priceList': updateState(setPriceLists, newItem); break; case 'priceListItem': updateState(setPriceListItems, newItem); break;
+            case 'branch': updateState(setBranches, saved); break;
+            case 'warehouse': updateState(setWarehouses, saved); break;
+            case 'city': updateState(setCities, saved); break;
+            case 'area': updateState(setAreas, saved); break;
+            case 'company': updateState(setCompanies, saved); break;
+            case 'group': updateState(setProductGroups, saved); break;
+            case 'distributor': updateState(setDistributors, saved); break;
+            case 'product': updateState(setProducts, saved); break;
+            case 'party': updateState(setParties, saved); break;
+            case 'account': updateState(setAccounts, saved); break;
+            case 'priceList': updateState(setPriceLists, saved); break;
         }
         closeModal();
     };
