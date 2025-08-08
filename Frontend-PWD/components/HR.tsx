@@ -58,6 +58,13 @@ const HR: React.FC = () => {
 
     const handleSaveEmployee = async (employeeData: Employee) => {
         const isEdit = !!employeeData.id;
+        console.log("Saving employee data:", employeeData, "isEdit:", isEdit);
+        const userData = {
+            email: employeeData.email,
+            role: employeeData.role,
+            password: employeeData.password,
+        }
+        employeeData.user = userData;
         const saved = isEdit
             ? await updateEmployee(employeeData.id, employeeData)
             : await createEmployee(employeeData);
@@ -146,7 +153,10 @@ const EmployeeFormModal: React.FC<{ employee: Employee | null; onClose: () => vo
                     <div><label className="block text-sm font-medium mb-1">Phone</label><input name="phone" value={formData.phone || ''} onChange={handleChange} required className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></div>
                     <div><label className="block text-sm font-medium mb-1">Email</label><input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></div>
                     <div><label className="block text-sm font-medium mb-1">Role</label><SearchableSelect options={roleOptions} value={formData.role || null} onChange={val => handleSelectChange('role', val)} /></div>
-                    <div className="flex items-center"><input type="checkbox" name="active" checked={formData.active} onChange={handleChange} className="h-4 w-4 rounded text-blue-600" /><label className="ml-2 text-sm">Active</label></div>
+                    <div><label className="block text-sm font-medium mb-1">Password</label><input name="password" value={formData.password || ''} onChange={handleChange} required className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></div>
+                    <div className="flex items-center">
+                        <input type="checkbox" name="active" checked={formData.active} onChange={handleChange} className="h-4 w-4 rounded text-blue-600" /><label className="ml-2 text-sm">Active</label>
+                        </div>
                 </fieldset>
                 <div className="p-4 bg-gray-50 dark:bg-gray-900 flex justify-end space-x-2">
                     <button type="button" onClick={onClose} className="px-4 py-2 border rounded-md text-sm">Cancel</button>

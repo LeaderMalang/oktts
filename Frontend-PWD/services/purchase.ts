@@ -1,6 +1,6 @@
 import { PurchaseInvoice, PurchaseReturn, InvestorTransaction } from '../types';
 
-const API_BASE = '/purchase';
+const API_BASE = 'http://127.0.0.1:8000/purchase';
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(url, {

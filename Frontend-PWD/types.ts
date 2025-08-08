@@ -222,7 +222,7 @@ export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface Employee {
     id: number;
-    user?: number | null;
+    user?: object;
     role: EmployeeRole;
     name: string;
     phone: string;
@@ -230,6 +230,15 @@ export interface Employee {
     cnic?: string;
     address?: string;
     active: boolean;
+    password:string;
+}
+export interface EmployeeContract{
+    id: number;
+    employee: number;
+    startDate: string; // YYYY-MM-DD
+    endDate: string | null; // YYYY-MM-DD
+    salary: number;
+    notes?: string;
 }
 
 export interface LeaveRequest {

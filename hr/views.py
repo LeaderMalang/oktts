@@ -26,7 +26,7 @@ from .serializers import (
 
 class BaseViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-
+    
 
 class EmployeeViewSet(BaseViewSet):
     queryset = Employee.objects.all()

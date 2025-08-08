@@ -1,11 +1,18 @@
 import { AttendanceRecord, Employee, EmployeeContract, LeaveBalance, LeaveRequest, PayrollSlip, SalesTarget, Task } from '../types';
 
-const API_BASE = '/api/hr';
+const API_BASE = 'http://127.0.0.1:8000/api/hr';
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const token = localStorage.getItem("authToken");
+    //console.log("Making request to:", url, "with options:", options,token);
     const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
         ...options,
+        headers: { 'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Token ${token}` } : {}),
+            ...(options.headers || {}), // allow override
+         },
+        
+        
     });
     if (!res.ok) {
         throw new Error(await res.text());

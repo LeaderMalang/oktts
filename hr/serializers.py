@@ -10,9 +10,21 @@ from .models import (
     LeaveBalance,
     PayrollSlip,
 )
+from user.models import User
 
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "email", "password", "role"]
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def create(self, validated_data):
+        # use create_user so password is hashed
+        return User.objects.create_user(**validated_data)
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     class Meta:
         model = Employee
         fields = [
@@ -26,6 +38,23 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "address",
             "active",
         ]
+    def create(self, validated_data):
+        # Pop nested user data
+        user_data = validated_data.pop("user")
+        user = UserSerializer().create(user_data)
+
+        # Create employee linked to user
+        employee = Employee.objects.create(user=user, **validated_data)
+        return employee
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)
+        if user_data:
+            user_serializer = UserSerializer(instance=instance.user, data=user_data, partial=True)
+            if user_serializer.is_valid(raise_exception=True):
+                user_serializer.save()
+
+        return super().update(instance, validated_data)
 
 
 class EmployeeContractSerializer(serializers.ModelSerializer):

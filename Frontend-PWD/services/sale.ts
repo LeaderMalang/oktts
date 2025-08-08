@@ -1,6 +1,6 @@
 import { Order, SaleReturn } from '../types';
 
-const API_BASE = '/sales';
+const API_BASE = 'http://127.0.0.1:8000/sales';
 
 export async function listSaleInvoices(): Promise<Order[]> {
     const res = await fetch(`${API_BASE}/invoices/`);
@@ -56,7 +56,7 @@ export async function createSaleReturn(data: Partial<SaleReturn>): Promise<SaleR
     const payload = {
         return_no: data.returnNo,
         date: data.date,
-        customer: data.customer?.id ?? data.customerId,
+        customer: data.customer?.id ?? data.customer,
         warehouse: data.warehouseId,
         total_amount: data.totalAmount,
         items: (data.items || []).map(it => ({
