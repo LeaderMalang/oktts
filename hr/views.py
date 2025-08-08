@@ -49,6 +49,23 @@ class LeaveRequestViewSet(BaseViewSet):
             qs = qs.filter(employee_id=employee_id)
         return qs
 
+    def _deduct_balance_if_approved(self, instance, previous_status=None):
+        if instance.status == "APPROVED" and previous_status != "APPROVED":
+            days = (instance.end_date - instance.start_date).days + 1
+            leave_balance, _ = LeaveBalance.objects.get_or_create(
+                employee=instance.employee
+            )
+            leave_balance.deduct_leave(instance.leave_type, days)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        self._deduct_balance_if_approved(instance)
+
+    def perform_update(self, serializer):
+        previous_status = serializer.instance.status
+        instance = serializer.save()
+        self._deduct_balance_if_approved(instance, previous_status)
+
 
 class AttendanceViewSet(BaseViewSet):
     queryset = Attendance.objects.all()
