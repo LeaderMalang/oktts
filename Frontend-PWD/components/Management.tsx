@@ -54,7 +54,14 @@ const Management: React.FC = () => {
                     managementService.getEntities<Company>('companies'),
                     managementService.getEntities<ProductGroup>('product-groups'),
                     managementService.getEntities<Distributor>('distributors'),
+
                     pricingService.getPriceLists(),
+
+                    managementService.getProducts(),
+                    managementService.getParties(),
+                    managementService.getAccounts(),
+                    managementService.getPriceLists(),
+
                 ]);
                 console.log('Fetched management data:', {citiesData, branchesData, warehousesData, areasData, companiesData, productGroupsData, distributorsData, priceListsData});
                 setBranches(branchesData);
@@ -64,6 +71,11 @@ const Management: React.FC = () => {
                 setCompanies(companiesData);
                 setProductGroups(productGroupsData);
                 setDistributors(distributorsData);
+
+                setProducts(productsData);
+                setParties(partiesData);
+                setAccounts(accountsData);
+
                 setPriceLists(priceListsData);
             } catch (err) {
                 console.error('Failed to load management data', err);
@@ -145,7 +157,7 @@ const Management: React.FC = () => {
             product: 'products', party: 'parties', account: 'accounts',
         };
         const slug = slugMap[entityType];
-        const saved = modalMode === 'add'
+        const savedEntity = modalMode === 'add'
             ? await managementService.createEntity(slug, newItem)
             : await managementService.updateEntity(slug, newItem.id, newItem);
 
@@ -154,16 +166,19 @@ const Management: React.FC = () => {
         };
 
         switch (entityType) {
-            case 'branch': updateState(setBranches, saved); break;
-            case 'warehouse': updateState(setWarehouses, saved); break;
-            case 'city': updateState(setCities, saved); break;
-            case 'area': updateState(setAreas, saved); break;
-            case 'company': updateState(setCompanies, saved); break;
-            case 'group': updateState(setProductGroups, saved); break;
-            case 'distributor': updateState(setDistributors, saved); break;
-            case 'product': updateState(setProducts, saved); break;
-            case 'party': updateState(setParties, saved); break;
-            case 'account': updateState(setAccounts, saved); break;
+
+            case 'branch': updateState(setBranches, savedEntity); break;
+            case 'warehouse': updateState(setWarehouses, savedEntity); break;
+            case 'city': updateState(setCities, savedEntity); break;
+            case 'area': updateState(setAreas, savedEntity); break;
+            case 'company': updateState(setCompanies, savedEntity); break;
+            case 'group': updateState(setProductGroups, savedEntity); break;
+            case 'distributor': updateState(setDistributors, savedEntity); break;
+            case 'product': updateState(setProducts, savedEntity); break;
+            case 'party': updateState(setParties, savedEntity); break;
+            case 'account': updateState(setAccounts, savedEntity); break;
+            case 'priceList': updateState(setPriceLists, savedEntity); break;
+
         }
         closeModal();
     };
