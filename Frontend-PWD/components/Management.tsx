@@ -146,7 +146,7 @@ const Management: React.FC = () => {
             priceList: 'price-lists', priceListItem: 'price-lists',
         };
         const slug = slugMap[entityType];
-        const saved = modalMode === 'add'
+        const savedEntity = modalMode === 'add'
             ? await managementService.createEntity(slug, newItem)
             : await managementService.updateEntity(slug, newItem.id, newItem);
 
@@ -155,17 +155,17 @@ const Management: React.FC = () => {
         };
 
         switch (entityType) {
-            case 'branch': updateState(setBranches, saved); break;
-            case 'warehouse': updateState(setWarehouses, saved); break;
-            case 'city': updateState(setCities, saved); break;
-            case 'area': updateState(setAreas, saved); break;
-            case 'company': updateState(setCompanies, saved); break;
-            case 'group': updateState(setProductGroups, saved); break;
-            case 'distributor': updateState(setDistributors, saved); break;
-            case 'product': updateState(setProducts, saved); break;
-            case 'party': updateState(setParties, saved); break;
-            case 'account': updateState(setAccounts, saved); break;
-            case 'priceList': updateState(setPriceLists, saved); break;
+            case 'branch': updateState(setBranches, savedEntity); break;
+            case 'warehouse': updateState(setWarehouses, savedEntity); break;
+            case 'city': updateState(setCities, savedEntity); break;
+            case 'area': updateState(setAreas, savedEntity); break;
+            case 'company': updateState(setCompanies, savedEntity); break;
+            case 'group': updateState(setProductGroups, savedEntity); break;
+            case 'distributor': updateState(setDistributors, savedEntity); break;
+            case 'product': updateState(setProducts, savedEntity); break;
+            case 'party': updateState(setParties, savedEntity); break;
+            case 'account': updateState(setAccounts, savedEntity); break;
+            case 'priceList': updateState(setPriceLists, savedEntity); break;
         }
         closeModal();
     };
