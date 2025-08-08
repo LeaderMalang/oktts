@@ -15,6 +15,8 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 
 // Purchase Invoices
 export const fetchPurchaseInvoices = () => request<PurchaseInvoice[]>(`${API_BASE}/invoices/`);
+export const fetchPurchaseInvoiceByNumber = (invoiceNo: string) =>
+  request<PurchaseInvoice>(`${API_BASE}/invoices/by-number/${invoiceNo}/`);
 export const createPurchaseInvoice = (data: Partial<PurchaseInvoice>) =>
   request<PurchaseInvoice>(`${API_BASE}/invoices/`, { method: 'POST', body: JSON.stringify(data) });
 export const updatePurchaseInvoice = (id: number | string, data: Partial<PurchaseInvoice>) =>

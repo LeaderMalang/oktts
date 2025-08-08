@@ -8,6 +8,12 @@ export async function listSaleInvoices(): Promise<Order[]> {
     return res.json();
 }
 
+export async function fetchSaleInvoiceByNumber(invoiceNo: string): Promise<Order> {
+    const res = await fetch(`${API_BASE}/invoices/by-number/${invoiceNo}/`);
+    if (!res.ok) throw new Error('Failed to fetch sale invoice');
+    return res.json();
+}
+
 export async function createSaleInvoice(invoice: Partial<Order>): Promise<Order> {
     const payload = {
         invoice_no: invoice.invoiceNo,
