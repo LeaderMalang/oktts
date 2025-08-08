@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
 import { PurchaseReturn, PurchaseReturnItem, PurchaseInvoice } from '../types';
 import { SUPPLIERS, PRODUCTS, ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { createPurchaseReturn, updatePurchaseReturn, fetchPurchaseInvoices, fetchPurchaseInvoiceByNumber } from '../services/purchase';
+
+import {  Product, Party } from '../types';
+
+
+import { fetchProducts, fetchParties } from '../services/inventory';
+
 
 interface PurchaseReturnProps {
   returnToEdit: PurchaseReturn | null;
@@ -21,9 +28,16 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
     totalAmount: 0,
   });
   const [supplierId, setSupplierId] = useState<number | null>(null);
+
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [selectedInvoiceNo, setSelectedInvoiceNo] = useState<string | null>(null);
   const [invoiceItems, setInvoiceItems] = useState<{productId: number; batchNo: string; quantity: number;}[]>([]);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
+  const suppliers = useMemo(() => parties.filter(p => p.partyType === 'supplier'), [parties]);
+  const supplier = useMemo(() => suppliers.find(s => s.id === supplierId), [supplierId, suppliers]);
+
 
   const isEditMode = useMemo(() => !!returnToEdit, [returnToEdit]);
 
@@ -37,6 +51,10 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
 
   useEffect(() => {
     fetchPurchaseInvoices().then(setInvoices).catch(() => {});
+
+    fetchProducts().then(setProducts).catch(() => setProducts([]));
+    fetchParties().then(setParties).catch(() => setParties([]));
+
   }, []);
 
   useEffect(() => {
@@ -101,7 +119,7 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'productId') {
-          const product = PRODUCTS.find(p => p.id === Number(value));
+          const product = products.find(p => p.id === Number(value));
           updatedItem.purchasePrice = product ? product.tradePrice : 0;
         }
         updatedItem.amount = updatedItem.quantity * updatedItem.purchasePrice;
@@ -135,7 +153,7 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
     const finalReturn: PurchaseReturn = {
       id: isEditMode ? returnToEdit!.id : new Date().getTime().toString(),
       ...pReturn,
-      supplier: SUPPLIERS.find(s => s.id === supplierId) || null,
+      supplier: supplier || null,
     };
 
     if (isEditMode) {
@@ -150,9 +168,11 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:p-8 space-y-6">
       <fieldset className="p-4 border dark:border-gray-700 rounded-md">
         <legend className="px-2 text-lg font-semibold">Return Details</legend>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div><label className="block text-sm font-medium mb-1">Invoice No</label><SearchableSelect options={invoices.map(inv => ({value: inv.invoiceNo, label: inv.invoiceNo}))} value={selectedInvoiceNo} onChange={handleInvoiceSelect} placeholder="Select Invoice" /></div>
           <div><label className="block text-sm font-medium mb-1">Supplier</label><SearchableSelect options={SUPPLIERS.map(s => ({value: s.id, label: s.name}))} value={supplierId} onChange={val => setSupplierId(val as number)} disabled={!!selectedInvoiceNo} /></div>
+
           <div><label className="block text-sm font-medium mb-1">Return Date</label><FormInput type="date" value={pReturn.date} onChange={(e) => setPReturn(prev => ({ ...prev, date: e.target.value }))} /></div>
           <div><label className="block text-sm font-medium mb-1">Return #</label><FormInput type="text" readOnly value={pReturn.returnNo} className="bg-gray-100 dark:bg-gray-700" /></div>
         </div>
@@ -175,7 +195,7 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
               {pReturn.items.map(item => (
                 <tr key={item.id}>
-                  <td className="p-1" style={{minWidth: '250px'}}><SearchableSelect options={PRODUCTS.map(p => ({value: p.id, label: p.name}))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
+                  <td className="p-1" style={{minWidth: '250px'}}><SearchableSelect options={products.map(p => ({value: p.id, label: p.name}))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
                   <td className="p-1"><FormInput type="text" placeholder="Batch No." value={item.batchNo} onChange={(e) => handleItemChange(item.id, 'batchNo', e.target.value)} style={{minWidth: '120px'}} /></td>
                   <td className="p-1"><FormInput type="number" value={item.quantity} onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))} min="1" style={{width: '100px'}} /></td>
                   <td className="p-1"><FormInput type="number" value={item.purchasePrice} onChange={(e) => handleItemChange(item.id, 'purchasePrice', parseFloat(e.target.value))} min="0" step="0.01" style={{width: '120px'}}/></td>
