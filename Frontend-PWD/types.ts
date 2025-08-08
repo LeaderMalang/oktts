@@ -80,6 +80,7 @@ export interface Product {
   salesTaxRatio: number;
   fedTaxRatio: number;
   disableSalePurchase: boolean;
+  stock?: number;
 }
 
 export interface Batch {

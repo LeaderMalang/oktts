@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Party, Product, InvoiceItem, Area, Task, PriceListItem, Order } from '../types';
-import { PARTIES_DATA, PRODUCTS, ICONS, CITIES, AREAS, EMPLOYEES, PRICE_LISTS, PRICE_LIST_ITEMS, BATCHES } from '../constants';
+import { Party, Product, Batch, InvoiceItem, Area, Task, PriceListItem, Order } from '../types';
+import { ICONS, CITIES, AREAS, EMPLOYEES } from '../constants';
+import { fetchProducts, fetchBatches, fetchCustomers, fetchPriceListItems } from '../services/inventory';
 import SearchableSelect from './SearchableSelect';
 import { createSaleInvoice } from '../services/sale';
 
@@ -13,6 +14,9 @@ const POS: React.FC = () => {
     const [cityId, setCityId] = useState<number | null>(null);
     const [areaId, setAreaId] = useState<number | null>(null);
     const [customerId, setCustomerId] = useState<number | null>(null);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [batches, setBatches] = useState<Batch[]>([]);
+    const [customers, setCustomers] = useState<Party[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showShortcutModal, setShowShortcutModal] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -23,9 +27,15 @@ const POS: React.FC = () => {
     const [createTask, setCreateTask] = useState(false);
     const [taskDetails, setTaskDetails] = useState<Partial<Task>>({ title: 'POS Follow-up', assignedTo: undefined, dueDate: '', });
 
+    useEffect(() => {
+        fetchProducts().then(setProducts).catch(console.error);
+        fetchBatches().then(setBatches).catch(console.error);
+        fetchCustomers().then(setCustomers).catch(console.error);
+    }, []);
+
     const filteredAreas = useMemo(() => cityId ? AREAS.filter(a => a.cityId === cityId) : [], [cityId]);
-    const filteredCustomers = useMemo(() => areaId ? PARTIES_DATA.filter(p => p.partyType === 'customer' && p.areaId === areaId) : [], [areaId]);
-    const filteredProducts = useMemo(() => searchTerm === '' ? PRODUCTS : PRODUCTS.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.barcode.includes(searchTerm)), [searchTerm]);
+    const filteredCustomers = useMemo(() => areaId ? customers.filter(p => p.partyType === 'customer' && p.areaId === areaId) : [], [areaId, customers]);
+    const filteredProducts = useMemo(() => searchTerm === '' ? products : products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.barcode.includes(searchTerm)), [searchTerm, products]);
 
     const grandTotal = useMemo(() => cart.reduce((acc, item) => acc + item.netAmount, 0), [cart]);
     const amountDue = useMemo(() => (paymentMethod === 'Credit' && grandTotal > paidAmount) ? grandTotal - paidAmount : 0, [grandTotal, paidAmount, paymentMethod]);
@@ -38,35 +48,48 @@ const POS: React.FC = () => {
     }, [grandTotal, selectedCustomerDetails, paymentMethod]);
 
     const availableBatches = useMemo(() => {
-        const batchesMap = new Map<number, typeof BATCHES>();
-        cart.forEach(item => { if (item.productId && !batchesMap.has(item.productId)) { batchesMap.set(item.productId, BATCHES.filter(b => b.productId === item.productId)); }});
-        return batchesMap;
-    }, [cart]);
+        const map = new Map<number, Batch[]>();
+        batches.forEach(b => {
+            if (!map.has(b.productId)) map.set(b.productId, []);
+            map.get(b.productId)!.push(b);
+        });
+        return map;
+    }, [batches]);
 
     useEffect(() => {
         if (customerId) {
-            const customerParty = PARTIES_DATA.find(p => p.id === customerId);
+            const customerParty = customers.find(p => p.id === customerId);
             if (customerParty) {
                 const priceListId = customerParty.priceListId || null;
                 setSelectedCustomerDetails({
                     creditLimit: customerParty.creditLimit || 0,
                     currentBalance: customerParty.currentBalance || 0,
-                    priceListId: priceListId,
-                    priceListItems: priceListId ? PRICE_LIST_ITEMS.filter(item => item.priceListId === priceListId) : []
+                    priceListId,
+                    priceListItems: [],
                 });
                 setTaskDetails(prev => ({...prev, title: `Follow-up with ${customerParty.name} from POS`}));
+                if (priceListId) {
+                    fetchPriceListItems(priceListId).then(items =>
+                        setSelectedCustomerDetails(prev => prev ? { ...prev, priceListItems: items } : null)
+                    ).catch(console.error);
+                }
             }
         } else {
             setSelectedCustomerDetails(null);
             setPaymentMethod('Cash');
             setTaskDetails(prev => ({...prev, title: `POS Follow-up`}));
         }
-    }, [customerId]);
+    }, [customerId, customers]);
     
     useEffect(() => { if (paymentMethod === 'Cash') { setPaidAmount(grandTotal); } else { setPaidAmount(0); } }, [grandTotal, paymentMethod]);
-    
+
     const addToCart = (product: Product) => {
         const rate = selectedCustomerDetails?.priceListItems.find(p => p.productId === product.id)?.customPrice || product.retailPrice;
+        const productStock = product.stock ?? 0;
+        if (productStock <= 0) {
+            alert('Product out of stock');
+            return;
+        }
         const newItem: InvoiceItem = {
             id: new Date().getTime().toString(),
             productId: product.id,
@@ -121,7 +144,7 @@ const POS: React.FC = () => {
         const saleData: Partial<Order> = {
             invoiceNo: `POS-${Date.now()}`,
             status: 'Delivered',
-            customer: PARTIES_DATA.find(p => p.id === customerId) || null,
+            customer: customers.find(p => p.id === customerId) || null,
             customerId: customerId || null,
             cityId,
             areaId,
@@ -172,7 +195,7 @@ const POS: React.FC = () => {
                         <tbody>
                             {cart.map(item => (
                                 <tr key={item.id} className="border-b dark:border-gray-700">
-                                    <td className="p-1">{PRODUCTS.find(p=>p.id === item.productId)?.name}</td>
+                                    <td className="p-1">{products.find(p=>p.id === item.productId)?.name}</td>
                                     <td className="p-1"><SearchableSelect options={(availableBatches.get(item.productId || 0) || []).map(b => ({ value: b.id, label: b.batchNo }))} value={item.batchId} onChange={val => handleItemChange(item.id, 'batchId', val)} disabled={!item.productId} /></td>
                                     <td className="p-1"><FormInput type="number" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', e.target.value)} /></td>
                                     <td className="p-1"><FormInput type="number" value={item.bonus} onChange={e => handleItemChange(item.id, 'bonus', e.target.value)} /></td>
