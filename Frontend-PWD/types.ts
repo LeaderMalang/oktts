@@ -442,7 +442,8 @@ export interface PriceListItem {
     id: number;
     priceListId: number;
     productId: number;
-    customPrice: number;
+    price: number;
+    description?: string;
 }
 
 // Notification Type

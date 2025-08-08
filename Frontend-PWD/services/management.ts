@@ -1,6 +1,12 @@
-import { PriceListItem } from '../types';
 
-const API_BASE = 'http://127.0.0.1:8000/api/management';
+import { ChartOfAccount, Party, PriceList, PriceListItem, Product } from '../types';
+
+const MANAGEMENT_API_BASE = 'http://127.0.0.1:8000/api/management';
+const INVENTORY_API_BASE = 'http://127.0.0.1:8000/api/inventory';
+const SALE_API_BASE = 'http://127.0.0.1:8000/api/sale';
+const VOUCHER_API_BASE = 'http://127.0.0.1:8000/api/voucher';
+const PRICING_API_BASE = 'http://127.0.0.1:8000/api/pricing';
+
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const token = localStorage.getItem('authToken');
@@ -19,34 +25,51 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const getEntities = <T>(entity: string) =>
-    request<T[]>(`${API_BASE}/${entity}/`);
+    request<T[]>(`${MANAGEMENT_API_BASE}/${entity}/`);
 
-export const createEntity = <T>(entity: string, data: Partial<T>) =>{
+export const createEntity = <T>(entity: string, data: Partial<T>) => {
     console.log(entity, data);
-    request<T>(`${API_BASE}/${entity}/`, {
+
+    request<T>(`${MANAGEMENT_API_BASE}/${entity}/`, {
+
+
         method: 'POST',
         body: JSON.stringify(data),
     });
-}
+};
     
 
 export const updateEntity = <T>(entity: string, id: number, data: Partial<T>) =>
-    request<T>(`${API_BASE}/${entity}/${id}/`, {
+    request<T>(`${MANAGEMENT_API_BASE}/${entity}/${id}/`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });
 
+
+export const getProducts = () =>
+    request<Product[]>(`${INVENTORY_API_BASE}/products/`);
+
+export const getParties = () =>
+    request<Party[]>(`${SALE_API_BASE}/parties/`);
+
+export const getAccounts = () =>
+    request<ChartOfAccount[]>(`${VOUCHER_API_BASE}/accounts/`);
+
+export const getPriceLists = () =>
+    request<PriceList[]>(`${PRICING_API_BASE}/pricelists/`);
+
 export const getPriceListItems = (priceListId: number) =>
-    request<PriceListItem[]>(`${API_BASE}/price-lists/${priceListId}/items/`);
+    request<PriceListItem[]>(`${PRICING_API_BASE}/pricelists/${priceListId}/items/`);
 
 export const createPriceListItem = (priceListId: number, data: Partial<PriceListItem>) =>
-    request<PriceListItem>(`${API_BASE}/price-lists/${priceListId}/items/`, {
+    request<PriceListItem>(`${PRICING_API_BASE}/pricelists/${priceListId}/items/`, {
         method: 'POST',
         body: JSON.stringify(data),
     });
 
 export const updatePriceListItem = (priceListId: number, id: number, data: Partial<PriceListItem>) =>
-    request<PriceListItem>(`${API_BASE}/price-lists/${priceListId}/items/${id}/`, {
+    request<PriceListItem>(`${PRICING_API_BASE}/pricelists/${priceListId}/items/${id}/`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });
+

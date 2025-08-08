@@ -255,16 +255,16 @@ export const PRICE_LISTS: PriceList[] = [
 
 export const PRICE_LIST_ITEMS: PriceListItem[] = [
     // Wholesale Prices
-    { id: 1, priceListId: 1, productId: 101, customPrice: 9.75 }, // Paracetamol
-    { id: 2, priceListId: 1, productId: 102, customPrice: 24.00 }, // Amoxicillin
-    { id: 3, priceListId: 1, productId: 201, customPrice: 42.00 }, // Moisturizing Cream
+    { id: 1, priceListId: 1, productId: 101, price: 9.75 }, // Paracetamol
+    { id: 2, priceListId: 1, productId: 102, price: 24.00 }, // Amoxicillin
+    { id: 3, priceListId: 1, productId: 201, price: 42.00 }, // Moisturizing Cream
     
     // Retail Chain Special
-    { id: 4, priceListId: 2, productId: 101, customPrice: 9.50 },
-    { id: 5, priceListId: 2, productId: 102, customPrice: 23.50 },
-    { id: 6, priceListId: 2, productId: 103, customPrice: 15.00 },
-    { id: 7, priceListId: 2, productId: 201, customPrice: 40.00 },
-    { id: 8, priceListId: 2, productId: 202, customPrice: 70.00 }
+    { id: 4, priceListId: 2, productId: 101, price: 9.50 },
+    { id: 5, priceListId: 2, productId: 102, price: 23.50 },
+    { id: 6, priceListId: 2, productId: 103, price: 15.00 },
+    { id: 7, priceListId: 2, productId: 201, price: 40.00 },
+    { id: 8, priceListId: 2, productId: 202, price: 70.00 }
 ];
 
 export const NOTIFICATIONS: Notification[] = [
