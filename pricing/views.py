@@ -1,5 +1,8 @@
 from rest_framework import viewsets
-from .models import PriceList, PriceListItem
+
+from inventory.models import PriceList, PriceListItem
+
+
 from .serializers import PriceListSerializer, PriceListItemSerializer
 
 
