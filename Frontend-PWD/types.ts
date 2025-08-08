@@ -21,9 +21,13 @@ export type Page =
 
   | 'inventory'
   | 'hr'
+  | 'sales-targets'
+
+
   | 'contracts'
 
   | 'payroll-slips'
+
 
   | 'management'
   | 'sale-invoices' 

@@ -28,9 +28,13 @@ export const ROUTES: Record<Page, RouteMeta> = {
   'stock-audit': { path: '/stock-audit', title: 'Physical Stock Audit' },
   hr: { path: '/hr', title: 'HR Management' },
 
+  'sales-targets': { path: '/sales-targets', title: 'Sales Targets' },
+
+
   contracts: { path: '/contracts', title: 'Employee Contracts' },
 
   'payroll-slips': { path: '/payroll-slips', title: 'Payroll Slips' },
+
 
   crm: { path: '/crm', title: 'Customer Relationship Management' },
   tasks: { path: '/tasks', title: 'Task Management' },

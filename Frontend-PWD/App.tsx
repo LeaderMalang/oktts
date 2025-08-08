@@ -32,6 +32,7 @@ import MyOrders from './components/MyOrders';
 import OrderDetail from './components/OrderDetail';
 import CRM from './components/CRM';
 import Tasks from './components/Tasks';
+import SalesTargets from './components/SalesTargets';
 import { NOTIFICATIONS } from './constants';
 import RecoveryOfficerDashboard from './components/RecoveryOfficerDashboard';
 import CreditRecovery from './components/CreditRecovery';
@@ -197,9 +198,13 @@ const App: React.FC = () => {
             <Route path={ROUTES['stock-audit'].path} element={<StockAudit />} />
             <Route path={ROUTES.hr.path} element={<HR />} />
 
+            <Route path={ROUTES['sales-targets'].path} element={<SalesTargets />} />
+
+
             <Route path={ROUTES.contracts.path} element={<EmployeeContracts />} />
 
             <Route path={ROUTES['payroll-slips'].path} element={<PayrollSlips />} />
+
 
             <Route path={ROUTES.crm.path} element={<CRM />} />
             <Route path={ROUTES.tasks.path} element={<Tasks currentUser={currentUser} />} />
