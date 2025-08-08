@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { PurchaseInvoice, PurchaseInvoiceItem, Task, InvoiceStatus } from '../types';
-import { SUPPLIERS, PRODUCTS, EMPLOYEES, PARTIES_DATA } from '../constants';
-import { ICONS } from '../constants';
+import { PurchaseInvoice, PurchaseInvoiceItem, Task, InvoiceStatus, Product, Party } from '../types';
+import { EMPLOYEES, ICONS } from '../constants';
+import { fetchProducts, fetchParties } from '../services/inventory';
 import SearchableSelect from './SearchableSelect';
 import { createPurchaseInvoice, updatePurchaseInvoice } from '../services/purchase';
 
@@ -44,6 +44,8 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
     investorId: undefined,
   });
   const [supplierId, setSupplierId] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
   
   const [createTask, setCreateTask] = useState(false);
   const [taskDetails, setTaskDetails] = useState<Partial<Task>>({
@@ -62,8 +64,13 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
     }
   }, [invoiceToEdit, isEditMode]);
 
-  const investorList = PARTIES_DATA.filter(p => p.partyType === 'investor');
-  const supplier = useMemo(() => SUPPLIERS.find(s => s.id === supplierId), [supplierId]);
+  useEffect(() => {
+    fetchProducts().then(setProducts).catch(() => setProducts([]));
+    fetchParties().then(setParties).catch(() => setParties([]));
+  }, []);
+  const investors = useMemo(() => parties.filter(p => p.partyType === 'investor'), [parties]);
+  const suppliers = useMemo(() => parties.filter(p => p.partyType === 'supplier'), [parties]);
+  const supplier = useMemo(() => suppliers.find(s => s.id === supplierId), [supplierId, suppliers]);
 
   useEffect(() => {
     const totalAmount = invoice.items.reduce((acc, item) => acc + item.netAmount, 0);
@@ -169,12 +176,14 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
       <fieldset className="p-4 border dark:border-gray-700 rounded-md">
         <legend className="px-2 text-lg font-semibold">Purchase Header</legend>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
             <FormField label="Inv. #"><FormInput type="text" value={invoice.invoiceNo} readOnly /></FormField>
             <FormField label="Supplier"><SearchableSelect options={SUPPLIERS.map(s => ({ value: s.id, label: s.name }))} value={supplierId} onChange={val => setSupplierId(val as number)} /></FormField>
+
             <FormField label="Invoice Date"><FormInput type="date" id="date" value={invoice.date} onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))} /></FormField>
             <FormField label="Company Inv. #"><FormInput type="text" id="companyInvoiceNumber" placeholder="Supplier invoice number" value={invoice.companyInvoiceNumber} onChange={(e) => setInvoice(prev => ({ ...prev, companyInvoiceNumber: e.target.value }))}/></FormField>
             <FormField label="Payment Method"><FormSelect value={invoice.paymentMethod} onChange={(e) => { const newMethod = e.target.value as 'Cash' | 'Credit'; setInvoice(prev => ({...prev, paymentMethod: newMethod, paidAmount: newMethod === 'Credit' ? 0 : prev.grandTotal})); }}><option value="Credit">Credit Purchase</option><option value="Cash">Cash Purchase</option></FormSelect></FormField>
-            <FormField label="Investor (Optional)"><SearchableSelect options={investorList.map(i => ({ value: i.id, label: i.name }))} value={invoice.investorId || null} onChange={val => setInvoice(prev => ({ ...prev, investorId: val ? Number(val) : undefined }))}/></FormField>
+            <FormField label="Investor (Optional)"><SearchableSelect options={investors.map(i => ({ value: i.id, label: i.name }))} value={invoice.investorId || null} onChange={val => setInvoice(prev => ({ ...prev, investorId: val ? Number(val) : undefined }))}/></FormField>
         </div>
       </fieldset>
 
@@ -198,7 +207,7 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                     {invoice.items.map(item => (
                     <tr key={item.id}>
-                        <td className="p-1" style={{minWidth: '200px'}}><SearchableSelect options={PRODUCTS.map(p => ({ value: p.id, label: p.name }))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
+                        <td className="p-1" style={{minWidth: '200px'}}><SearchableSelect options={products.map(p => ({ value: p.id, label: p.name }))} value={item.productId} onChange={val => handleItemChange(item.id, 'productId', val)} /></td>
                         <td className="p-1"><FormInput type="text" placeholder="Batch No." value={item.batchNo} onChange={(e) => handleItemChange(item.id, 'batchNo', e.target.value)} style={{minWidth: '110px'}}/></td>
                         <td className="p-1"><FormInput type="date" value={item.expiryDate} onChange={(e) => handleItemChange(item.id, 'expiryDate', e.target.value)} style={{minWidth: '140px'}}/></td>
                         <td className="p-1"><FormInput type="number" value={item.quantity} onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))} min="1" style={{width: '80px'}}/></td>

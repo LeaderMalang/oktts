@@ -1,3 +1,54 @@
-from django.shortcuts import render
+from rest_framework import permissions, viewsets
 
-# Create your views here.
+from .models import City, Area, Company, Group, Distributor, Branch, Warehouse
+from .serializers import (
+    CitySerializer,
+    AreaSerializer,
+    CompanySerializer,
+    GroupSerializer,
+    DistributorSerializer,
+    BranchSerializer,
+    WarehouseSerializer,
+)
+
+
+class CityViewSet(viewsets.ModelViewSet):
+    queryset = City.objects.all()
+    serializer_class = CitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class AreaViewSet(viewsets.ModelViewSet):
+    queryset = Area.objects.all()
+    serializer_class = AreaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class CompanyViewSet(viewsets.ModelViewSet):
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class DistributorViewSet(viewsets.ModelViewSet):
+    queryset = Distributor.objects.all()
+    serializer_class = DistributorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class BranchViewSet(viewsets.ModelViewSet):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class WarehouseViewSet(viewsets.ModelViewSet):
+    queryset = Warehouse.objects.all()
+    serializer_class = WarehouseSerializer
+    permission_classes = [permissions.IsAuthenticated]
