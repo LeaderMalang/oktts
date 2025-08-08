@@ -139,6 +139,7 @@ const POS: React.FC = () => {
             paymentMethod,
             paidAmount: isPaid ? grandTotal : paidAmount,
         };
+        // Use the standard sale invoice API so backend voucher creation runs.
         await createSaleInvoice(saleData);
         clearCart();
     };

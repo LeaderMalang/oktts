@@ -5,9 +5,13 @@ from setting.models import Warehouse
 from inventory.models import Party, Product, Batch
 
 
+import logging
+
 from voucher.models import Voucher
 from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
+
+logger = logging.getLogger(__name__)
 
 # Create your models here.
 class SaleInvoice(models.Model):
@@ -79,6 +83,7 @@ class SaleInvoice(models.Model):
             )
             self.voucher = voucher
             super().save(update_fields=['voucher'])
+            logger.info("Linked voucher %s to sale invoice %s", voucher.pk, self.pk)
 
 
 
