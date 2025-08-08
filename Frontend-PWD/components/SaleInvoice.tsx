@@ -154,8 +154,8 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
                   if(!item.productId) return item;
                   const product = products.find(p => p.id === item.productId);
                   if (!product) return item;
-                  const customPriceItem = priceListId ? PRICE_LIST_ITEMS.find(pli => pli.priceListId === priceListId && pli.productId === product.id) : undefined;
-                  const rate = customPriceItem ? customPriceItem.customPrice : product.retailPrice;
+                  const priceListItem = priceListId ? PRICE_LIST_ITEMS.find(pli => pli.priceListId === priceListId && pli.productId === product.id) : undefined;
+                  const rate = priceListItem ? priceListItem.price : product.retailPrice;
                   const amount = item.quantity * rate;
                   const disc1Amount = amount * (item.discount1 / 100);
                   const amountAfterDisc1 = amount - disc1Amount;
@@ -217,8 +217,8 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
         if (field === 'productId' || field === 'batchId') {
             updatedItem.batchId = field === 'productId' ? null : updatedItem.batchId;
             if (product) {
-                const customPriceItem = selectedCustomerDetails?.priceListItems.find(p => p.productId === product.id);
-                updatedItem.rate = customPriceItem ? customPriceItem.customPrice : product.retailPrice;
+                const priceListItem = selectedCustomerDetails?.priceListItems.find(p => p.productId === product.id);
+                updatedItem.rate = priceListItem ? priceListItem.price : product.retailPrice;
             } else { updatedItem.rate = 0; }
         }
         

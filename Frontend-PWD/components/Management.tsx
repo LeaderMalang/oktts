@@ -5,6 +5,7 @@ import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 import SearchableSelect from './SearchableSelect';
 import * as managementService from '../services/management';
+import * as pricingService from '../services/pricing';
 
 type ManagementTab = 'organization' | 'product_masters' | 'products' | 'parties' | 'pricing' | 'accounting';
 type EntityType = 'branch' | 'warehouse' | 'city' | 'area' | 'company' | 'group' | 'distributor' | 'product' | 'party' | 'account' | 'priceList' | 'priceListItem';
@@ -45,7 +46,7 @@ const Management: React.FC = () => {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [branchesData, warehousesData, citiesData, areasData, companiesData, productGroupsData, distributorsData, productsData, partiesData, accountsData, priceListsData] = await Promise.all([
+                const [branchesData, warehousesData, citiesData, areasData, companiesData, productGroupsData, distributorsData, priceListsData] = await Promise.all([
                     managementService.getEntities<Branch>('branches'),
                     managementService.getEntities<Warehouse>('warehouses'),
                     managementService.getEntities<City>('cities'),
@@ -53,12 +54,16 @@ const Management: React.FC = () => {
                     managementService.getEntities<Company>('companies'),
                     managementService.getEntities<ProductGroup>('product-groups'),
                     managementService.getEntities<Distributor>('distributors'),
+
+                    pricingService.getPriceLists(),
+
                     managementService.getProducts(),
                     managementService.getParties(),
                     managementService.getAccounts(),
                     managementService.getPriceLists(),
+
                 ]);
-                console.log('Fetched management data:', {citiesData, branchesData, warehousesData, areasData, companiesData, productGroupsData, distributorsData, productsData, partiesData, accountsData, priceListsData});
+                console.log('Fetched management data:', {citiesData, branchesData, warehousesData, areasData, companiesData, productGroupsData, distributorsData, priceListsData});
                 setBranches(branchesData);
                 setWarehouses(warehousesData);
                 setCities(citiesData);
@@ -66,9 +71,11 @@ const Management: React.FC = () => {
                 setCompanies(companiesData);
                 setProductGroups(productGroupsData);
                 setDistributors(distributorsData);
+
                 setProducts(productsData);
                 setParties(partiesData);
                 setAccounts(accountsData);
+
                 setPriceLists(priceListsData);
             } catch (err) {
                 console.error('Failed to load management data', err);
@@ -79,7 +86,7 @@ const Management: React.FC = () => {
 
     useEffect(() => {
         if (selectedPriceList) {
-            managementService.getPriceListItems(selectedPriceList.id)
+            pricingService.getPriceListItems(selectedPriceList.id)
                 .then(setPriceListItems)
                 .catch(err => console.error('Failed to load price list items', err));
         } else {
@@ -127,23 +134,27 @@ const Management: React.FC = () => {
 
     const handleSave = async (newItem: any) => {
         if (!entityType) return;
-        if (entityType === 'priceListItem') {
-            const priceListId = newItem.priceListId;
+        if (entityType === 'priceList') {
             const saved = modalMode === 'add'
-                ? await managementService.createPriceListItem(priceListId, newItem)
-                : await managementService.updatePriceListItem(priceListId, newItem.id, newItem);
-            setPriceListItems(prev => modalMode === 'add'
-                ? [...prev, saved]
-                : prev.map(i => i.id === saved.id ? saved : i));
+                ? await pricingService.createPriceList(newItem)
+                : await pricingService.updatePriceList(newItem.id, newItem);
+            setPriceLists(prev => modalMode === 'add' ? [...prev, saved] : prev.map(i => i.id === saved.id ? saved : i));
+            closeModal();
+            return;
+        }
+        if (entityType === 'priceListItem') {
+            const saved = modalMode === 'add'
+                ? await pricingService.createPriceListItem(newItem)
+                : await pricingService.updatePriceListItem(newItem.id, newItem);
+            setPriceListItems(prev => modalMode === 'add' ? [...prev, saved] : prev.map(i => i.id === saved.id ? saved : i));
             closeModal();
             return;
         }
 
-        const slugMap: Record<EntityType, string> = {
+        const slugMap: Record<string, string> = {
             branch: 'branches', warehouse: 'warehouses', city: 'cities', area: 'areas',
             company: 'companies', group: 'product-groups', distributor: 'distributors',
             product: 'products', party: 'parties', account: 'accounts',
-            priceList: 'price-lists', priceListItem: 'price-lists',
         };
         const slug = slugMap[entityType];
         const savedEntity = modalMode === 'add'
@@ -155,6 +166,7 @@ const Management: React.FC = () => {
         };
 
         switch (entityType) {
+
             case 'branch': updateState(setBranches, savedEntity); break;
             case 'warehouse': updateState(setWarehouses, savedEntity); break;
             case 'city': updateState(setCities, savedEntity); break;
@@ -166,6 +178,7 @@ const Management: React.FC = () => {
             case 'party': updateState(setParties, savedEntity); break;
             case 'account': updateState(setAccounts, savedEntity); break;
             case 'priceList': updateState(setPriceLists, savedEntity); break;
+
         }
         closeModal();
     };
@@ -199,7 +212,7 @@ const Management: React.FC = () => {
                                 onEdit={(item) => openModal('priceListItem', 'edit', item)}
                                 columns={[
                                     { key: 'productId', label: 'Product', render: (val) => getDepName(val, products) }, 
-                                    { key: 'customPrice', label: 'Custom Price', render: val => `Rs. ${val.toFixed(2)}` }
+                                    { key: 'price', label: 'Price', render: val => `Rs. ${val.toFixed(2)}` }
                                 ]}
                             />
                         </div>
@@ -373,7 +386,7 @@ const ManagementFormModal: React.FC<{ entityType: any, mode: any, currentItem: a
                 return <>
                      <SearchableSelectWithLabel label="Price List" options={priceLists.map((p: PriceList) => ({ value: p.id, label: p.name }))} value={formData.priceListId || null} onChange={val => handleChange('priceListId', val)} disabled={!!formData.priceListId} />
                      <SearchableSelectWithLabel label="Product" options={products.map((p: Product) => ({ value: p.id, label: p.name }))} value={formData.productId || null} onChange={val => handleChange('productId', val)} />
-                     <FormInput label="Custom Price" name="customPrice" type="number" value={formData.customPrice || ''} onChange={handleInputChange} required className="md:col-span-2" />
+                     <FormInput label="Price" name="price" type="number" value={formData.price || ''} onChange={handleInputChange} required className="md:col-span-2" />
                 </>;
             default:
                 return null;

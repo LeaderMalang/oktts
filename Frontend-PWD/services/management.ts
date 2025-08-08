@@ -1,3 +1,4 @@
+
 import { ChartOfAccount, Party, PriceList, PriceListItem, Product } from '../types';
 
 const MANAGEMENT_API_BASE = 'http://127.0.0.1:8000/api/management';
@@ -5,6 +6,7 @@ const INVENTORY_API_BASE = 'http://127.0.0.1:8000/api/inventory';
 const SALE_API_BASE = 'http://127.0.0.1:8000/api/sale';
 const VOUCHER_API_BASE = 'http://127.0.0.1:8000/api/voucher';
 const PRICING_API_BASE = 'http://127.0.0.1:8000/api/pricing';
+
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const token = localStorage.getItem('authToken');
@@ -43,6 +45,7 @@ export const updateEntity = <T>(entity: string, id: number, data: Partial<T>) =>
         body: JSON.stringify(data),
     });
 
+
 export const getProducts = () =>
     request<Product[]>(`${INVENTORY_API_BASE}/products/`);
 
@@ -69,3 +72,4 @@ export const updatePriceListItem = (priceListId: number, id: number, data: Parti
         method: 'PUT',
         body: JSON.stringify(data),
     });
+
