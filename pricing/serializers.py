@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PriceList, PriceListItem
+from inventory.models import PriceList, PriceListItem
 
 
 class PriceListSerializer(serializers.ModelSerializer):
