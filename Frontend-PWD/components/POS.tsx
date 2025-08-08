@@ -66,7 +66,7 @@ const POS: React.FC = () => {
     useEffect(() => { if (paymentMethod === 'Cash') { setPaidAmount(grandTotal); } else { setPaidAmount(0); } }, [grandTotal, paymentMethod]);
     
     const addToCart = (product: Product) => {
-        const rate = selectedCustomerDetails?.priceListItems.find(p => p.productId === product.id)?.customPrice || product.retailPrice;
+        const rate = selectedCustomerDetails?.priceListItems.find(p => p.productId === product.id)?.price || product.retailPrice;
         const newItem: InvoiceItem = {
             id: new Date().getTime().toString(),
             productId: product.id,
