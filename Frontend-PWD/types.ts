@@ -36,6 +36,7 @@ export type Page =
   | 'my-orders'
   | 'crm'
   | 'tasks'
+  | 'delivery-assignments'
   | 'recovery-officer-dashboard'
   | 'credit-recovery'
   | 'my-leave'
@@ -314,6 +315,15 @@ export interface Task {
     invoiceObjectId?: number | null;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface DeliveryAssignment {
+    id: number;
+    employee: number;
+    sale: number;
+    assignedDate: string;
+    status: 'ASSIGNED' | 'DELIVERED' | 'FAILED';
+    remarks?: string | null;
 }
 
 // Inventory Module Types

@@ -29,6 +29,7 @@ export const ROUTES: Record<Page, RouteMeta> = {
   hr: { path: '/hr', title: 'HR Management' },
   crm: { path: '/crm', title: 'Customer Relationship Management' },
   tasks: { path: '/tasks', title: 'Task Management' },
+  'delivery-assignments': { path: '/delivery-assignments', title: 'Delivery Assignments' },
   management: { path: '/management', title: 'System Management' },
   expenses: { path: '/expenses', title: 'Expense Management' },
   'my-leave': { path: '/my-leave', title: 'My Leave Requests' },
