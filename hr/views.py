@@ -1,4 +1,6 @@
 from rest_framework import permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from .models import (
     Attendance,
@@ -65,6 +67,17 @@ class LeaveRequestViewSet(BaseViewSet):
         previous_status = serializer.instance.status
         instance = serializer.save()
         self._deduct_balance_if_approved(instance, previous_status)
+
+    @action(detail=True, methods=["patch"], url_path="status")
+    def update_status(self, request, pk=None):
+        instance = self.get_object()
+        status_value = request.data.get("status")
+        serializer = self.get_serializer(
+            instance, data={"status": status_value}, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 
 class AttendanceViewSet(BaseViewSet):
