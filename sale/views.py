@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -103,6 +103,14 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(invoice)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"])
+    def pos(self, request):
+        """Create a sale invoice using partial order data for POS submissions."""
+        serializer = self.get_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class SaleReturnViewSet(viewsets.ModelViewSet):
