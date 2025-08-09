@@ -1,9 +1,11 @@
 from django.urls import reverse
 from django.test import TestCase
+
 from setting.models import Company, Group, Distributor
 from .models import Product, PriceList, PriceListItem, Batch, StockMovement
 from django.utils import timezone
 from datetime import datetime, timezone as dt_timezone
+
 
 
 class PriceListAPITest(TestCase):
@@ -36,15 +38,19 @@ class PriceListAPITest(TestCase):
         self.assertEqual(data['items'][0]['custom_price'], '8.00')
 
 
+
 class StockMovementAPITest(TestCase):
+
     def setUp(self):
         company = Company.objects.create(name="Comp")
         group = Group.objects.create(name="Grp")
         distributor = Distributor.objects.create(name="Dist")
 
+
         self.product1 = Product.objects.create(
             name="Prod1",
             barcode="p1",
+
             company=company,
             group=group,
             distributor=distributor,
@@ -55,6 +61,7 @@ class StockMovementAPITest(TestCase):
             disable_sale_purchase=False,
         )
 
+
         self.product2 = Product.objects.create(
             name="Prod2",
             barcode="p2",
@@ -63,10 +70,12 @@ class StockMovementAPITest(TestCase):
             distributor=distributor,
             trade_price=15,
             retail_price=18,
+
             sales_tax_ratio=1,
             fed_tax_ratio=1,
             disable_sale_purchase=False,
         )
+
         # Create a branch and warehouse for batches
         from setting.models import Branch, Warehouse
         branch = Branch.objects.create(name="Main", address="Addr")
@@ -112,3 +121,4 @@ class StockMovementAPITest(TestCase):
         data = response.json()['movements']
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['productId'], self.product1.id)
+

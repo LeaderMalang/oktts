@@ -1,8 +1,12 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+
 from django.utils.dateparse import parse_date
-from .models import PriceList, StockMovement
+from .models import PriceList, StockMovement,Batch
+
+from django.db.models import Sum
+
 
 
 @require_http_methods(["GET"])
@@ -27,6 +31,7 @@ def price_list_detail(request, pk):
 
 
 @require_http_methods(["GET"])
+
 def stock_movement_list(request):
     movements = StockMovement.objects.select_related('batch__product').all()
 
@@ -60,3 +65,20 @@ def stock_movement_list(request):
     ]
 
     return JsonResponse({'movements': data})
+@require_http_methods(["GET"])
+def inventory_levels(request):
+    """Return aggregated stock levels per product."""
+    levels = (
+        Batch.objects.values("product__id", "product__name")
+        .annotate(total_stock=Sum("quantity"))
+        .order_by("product__id")
+    )
+    data = [
+        {
+            "product": {"id": item["product__id"], "name": item["product__name"]},
+            "totalStock": item["total_stock"] or 0,
+        }
+        for item in levels
+    ]
+    return JsonResponse({"levels": data})
+
