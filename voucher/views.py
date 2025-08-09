@@ -1,3 +1,11 @@
-from django.shortcuts import render
+from rest_framework import viewsets
 
-# Create your views here.
+from .models import ChartOfAccount
+from .serializers import ChartOfAccountSerializer
+
+
+class ChartOfAccountViewSet(viewsets.ModelViewSet):
+    """API endpoint for managing chart of accounts."""
+
+    queryset = ChartOfAccount.objects.all()
+    serializer_class = ChartOfAccountSerializer

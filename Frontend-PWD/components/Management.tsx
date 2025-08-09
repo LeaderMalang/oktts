@@ -5,7 +5,12 @@ import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
 import SearchableSelect from './SearchableSelect';
 import * as managementService from '../services/management';
+
+import * as inventoryService from '../services/inventory';
+import * as voucherService from '../services/voucher';
+
 import * as pricingService from '../services/pricing';
+
 
 type ManagementTab = 'organization' | 'product_masters' | 'products' | 'parties' | 'pricing' | 'accounting';
 type EntityType = 'branch' | 'warehouse' | 'city' | 'area' | 'company' | 'group' | 'distributor' | 'product' | 'party' | 'account' | 'priceList' | 'priceListItem';
@@ -46,7 +51,9 @@ const Management: React.FC = () => {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [branchesData, warehousesData, citiesData, areasData, companiesData, productGroupsData, distributorsData, priceListsData] = await Promise.all([
+
+                const [branchesData, warehousesData, citiesData, areasData, companiesData, productGroupsData, distributorsData, partiesData, accountsData] = await Promise.all([
+
                     managementService.getEntities<Branch>('branches'),
                     managementService.getEntities<Warehouse>('warehouses'),
                     managementService.getEntities<City>('cities'),
@@ -54,6 +61,10 @@ const Management: React.FC = () => {
                     managementService.getEntities<Company>('companies'),
                     managementService.getEntities<ProductGroup>('product-groups'),
                     managementService.getEntities<Distributor>('distributors'),
+
+                    inventoryService.fetchParties(),
+                    voucherService.fetchChartOfAccounts(),
+           
 
                     pricingService.getPriceLists(),
 
@@ -64,6 +75,7 @@ const Management: React.FC = () => {
 
                 ]);
                 console.log('Fetched management data:', {citiesData, branchesData, warehousesData, areasData, companiesData, productGroupsData, distributorsData, priceListsData});
+
                 setBranches(branchesData);
                 setWarehouses(warehousesData);
                 setCities(citiesData);
@@ -72,11 +84,16 @@ const Management: React.FC = () => {
                 setProductGroups(productGroupsData);
                 setDistributors(distributorsData);
 
+                setParties(partiesData);
+                setAccounts(accountsData);
+
+
                 setProducts(productsData);
                 setParties(partiesData);
                 setAccounts(accountsData);
 
                 setPriceLists(priceListsData);
+
             } catch (err) {
                 console.error('Failed to load management data', err);
             }

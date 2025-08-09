@@ -1,7 +1,10 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from .models import PriceList
+from rest_framework import viewsets
+
+from .models import PriceList, Party
+from .serializers import PartySerializer
 
 
 @require_http_methods(["GET"])
@@ -23,3 +26,10 @@ def price_list_detail(request, pk):
         'items': list(items)
     }
     return JsonResponse(data)
+
+
+class PartyViewSet(viewsets.ModelViewSet):
+    """API endpoint for managing parties."""
+
+    queryset = Party.objects.all()
+    serializer_class = PartySerializer

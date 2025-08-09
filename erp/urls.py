@@ -32,7 +32,8 @@ urlpatterns = [
 
 
 
-    path('inventory/', include('inventory.urls')),
+    path('api/inventory/', include('inventory.urls')),
+    path('api/voucher/', include('voucher.urls')),
 
     path('api/crm/', include('crm.urls')),
     path('api/tasks/', include('task.urls')),
