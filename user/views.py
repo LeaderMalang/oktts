@@ -3,14 +3,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import User
+from .models import CustomUser
 from .serializers import AuthTokenSerializer, UserSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet providing CRUD operations for users and a `me` endpoint."""
 
-    queryset = User.objects.all()
+    queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 

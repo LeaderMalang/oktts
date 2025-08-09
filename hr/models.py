@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from user.models import User
+from user.models import CustomUser
 
 
 class EmployeeRole(models.TextChoices):
@@ -19,7 +19,7 @@ class EmployeeRole(models.TextChoices):
 class Employee(models.Model):
 
     user = models.ForeignKey(
-        User,
+        CustomUser,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -72,7 +72,7 @@ class LeaveRequest(models.Model):
     reason = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     applied_on = models.DateTimeField(auto_now_add=True)
-    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='leave_reviews')
+    reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='leave_reviews')
 
     def __str__(self):
         return f"{self.employee.name} - {self.leave_type}"

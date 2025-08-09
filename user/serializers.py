@@ -1,14 +1,14 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
-from .models import User
+from .models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User model exposing basic fields."""
 
     class Meta:
-        model = User
+        model = CustomUser
         fields = ("id", "username", "email", "role")
 
 

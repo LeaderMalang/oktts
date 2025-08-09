@@ -1,5 +1,5 @@
 from django.db import models
-from user.models import User
+from user.models import CustomUser
 
 class AccountType(models.Model):
     ACCOUNT_TYPES = [
@@ -45,8 +45,8 @@ class Voucher(models.Model):
     date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     narration = models.TextField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='vouchers_created')
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='vouchers_approved', blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='vouchers_created')
+    approved_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='vouchers_approved', blank=True)
     branch = models.ForeignKey('setting.Branch', on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
 

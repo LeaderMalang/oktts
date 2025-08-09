@@ -10,12 +10,12 @@ from .models import (
     LeaveBalance,
     PayrollSlip,
 )
-from user.models import User
+from user.models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = CustomUser
         fields = ["id", "email", "password", "role"]
         extra_kwargs = {"password": {"write_only": True}}
 
