@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ("id", "username", "email", "role")
+        fields = ("id", "email", "role")
 
 
 class AuthTokenSerializer(serializers.Serializer):
