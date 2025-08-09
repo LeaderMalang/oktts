@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
+from inventory.models import Party
 from .models import CustomUser
 
 
@@ -34,4 +35,22 @@ class AuthTokenSerializer(serializers.Serializer):
             )
         attrs["user"] = user
         return attrs
+
+
+class PartySerializer(serializers.ModelSerializer):
+    """Serializer for the `Party` model used during registration."""
+
+    email = serializers.EmailField()
+
+    class Meta:
+        model = Party
+        fields = (
+            "id",
+            "name",
+            "address",
+            "phone",
+            "email",
+            "party_type",
+        )
+        read_only_fields = ("id", "party_type")
 
