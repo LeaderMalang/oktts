@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from inventory.models import Party, Product
@@ -14,8 +15,14 @@ from setting.models import (
     Warehouse,
 )
 from voucher.models import AccountType, ChartOfAccount, VoucherType
+
 from django.contrib.auth import get_user_model
+
+from hr.models import Employee
+
 from .models import SaleInvoice
+
+User = get_user_model()
 
 
 class SaleInvoiceVoucherLinkTest(APITestCase):
@@ -65,6 +72,7 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
         self.user = User.objects.create_user("user@example.com", "pass")
 
     def test_voucher_linked_on_creation(self):
+
         self.client.force_authenticate(user=self.user)
         payload = {
             "invoice_no": "INV-001",
@@ -136,3 +144,4 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
         response = self.client.post("/sales/invoices/pos/", payload, format="json")
         self.assertEqual(response.status_code, 201, response.data)
         self.assertTrue(SaleInvoice.objects.filter(invoice_no="INV-POS-001").exists())
+
