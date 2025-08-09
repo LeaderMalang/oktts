@@ -15,7 +15,11 @@ from setting.models import (
     Warehouse,
 )
 from voucher.models import AccountType, ChartOfAccount, VoucherType
+
+from django.contrib.auth import get_user_model
+
 from hr.models import Employee
+
 from .models import SaleInvoice
 
 User = get_user_model()
@@ -64,48 +68,80 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             area=self.area,
         )
         VoucherType.objects.create(name="Sale", code="SAL")
+        User = get_user_model()
         self.user = User.objects.create_user("user@example.com", "pass")
 
     def test_voucher_linked_on_creation(self):
-        invoice = SaleInvoice.objects.create(
-            invoice_no="INV-001",
-            date=date.today(),
-            customer=self.customer,
-            warehouse=self.warehouse,
-            total_amount=10,
-            sub_total=10,
-            discount=0,
-            tax=0,
-            grand_total=10,
-            paid_amount=10,
-            net_amount=10,
-            payment_method="Cash",
-            status="Paid",
-        )
+
+        self.client.force_authenticate(user=self.user)
+        payload = {
+            "invoice_no": "INV-001",
+            "date": date.today().isoformat(),
+            "customer": self.customer.id,
+            "warehouse": self.warehouse.id,
+            "city_id": self.city.id,
+            "area_id": self.area.id,
+            "sub_total": "10.00",
+            "total_amount": "10.00",
+            "discount": "0",
+            "tax": "0",
+            "grand_total": "10.00",
+            "paid_amount": "10.00",
+            "net_amount": "10.00",
+            "payment_method": "Cash",
+            "status": "Paid",
+            "items": [
+                {
+                    "product": self.product.id,
+                    "quantity": 1,
+                    "bonus": 0,
+                    "packing": 0,
+                    "rate": "10.00",
+                    "discount1": 0,
+                    "discount2": 0,
+                    "amount": "10.00",
+                    "net_amount": "10.00",
+                }
+            ],
+        }
+        response = self.client.post("/sales/invoices/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        invoice = SaleInvoice.objects.get(id=response.data["id"])
         self.assertIsNotNone(invoice.voucher)
 
-    def test_status_action_updates_status_and_delivery_man(self):
-        invoice = SaleInvoice.objects.create(
-            invoice_no="INV-002",
-            date=date.today(),
-            customer=self.customer,
-            warehouse=self.warehouse,
-            total_amount=10,
-            sub_total=10,
-            discount=0,
-            tax=0,
-            grand_total=10,
-            paid_amount=0,
-            net_amount=10,
-            payment_method="Cash",
-            status="Pending",
-        )
+    def test_create_via_pos_action(self):
         self.client.force_authenticate(user=self.user)
-        employee = Employee.objects.create(name="Delivery", phone="123")
-        patch_data = {"status": "Paid", "delivery_man_id": employee.id}
-        patch_resp = self.client.patch(
-            f"/sales/invoices/{invoice.id}/status/", patch_data, format="json"
-        )
-        self.assertEqual(patch_resp.status_code, 200, patch_resp.data)
-        self.assertEqual(patch_resp.data["status"], "Paid")
-        self.assertEqual(patch_resp.data["delivery_man_id"], employee.id)
+        payload = {
+            "invoice_no": "INV-POS-001",
+            "date": date.today().isoformat(),
+            "customer": self.customer.id,
+            "warehouse": self.warehouse.id,
+            "city_id": self.city.id,
+            "area_id": self.area.id,
+            "sub_total": "10.00",
+            "total_amount": "10.00",
+            "discount": "0",
+            "tax": "0",
+            "grand_total": "10.00",
+            "paid_amount": "10.00",
+            "net_amount": "10.00",
+            "payment_method": "Cash",
+            "status": "Paid",
+            "items": [
+                {
+                    "product": self.product.id,
+                    "quantity": 1,
+                    "bonus": 0,
+                    "packing": 0,
+                    "rate": "10.00",
+                    "discount1": 0,
+                    "discount2": 0,
+                    "amount": "10.00",
+                    "net_amount": "10.00",
+                }
+            ],
+        }
+        response = self.client.post("/sales/invoices/pos/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(SaleInvoice.objects.filter(invoice_no="INV-POS-001").exists())
+

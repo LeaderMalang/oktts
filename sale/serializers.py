@@ -67,6 +67,7 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
+        validated_data.setdefault("total_amount", validated_data.get("sub_total"))
         invoice = SaleInvoice.objects.create(**validated_data)
         for item in items_data:
             SaleInvoiceItem.objects.create(invoice=invoice, **item)
