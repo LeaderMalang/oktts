@@ -2,10 +2,15 @@ import json
 from datetime import date, timedelta
 
 from django.test import TestCase
+
 from django.urls import reverse
 
 from setting.models import Branch, Company, Distributor, Group, Warehouse
 from .models import Batch, PriceList, PriceListItem, Product, StockMovement
+
+from datetime import date
+
+
 
 
 class PriceListAPITest(TestCase):
@@ -38,16 +43,20 @@ class PriceListAPITest(TestCase):
         self.assertEqual(data['items'][0]['custom_price'], '8.00')
 
 
+
 class StockAuditAPITest(TestCase):
+
     def setUp(self):
         company = Company.objects.create(name="Comp")
         group = Group.objects.create(name="Grp")
         distributor = Distributor.objects.create(name="Dist")
+
         branch = Branch.objects.create(name="Main", address="addr", sale_invoice_footer="")
         warehouse = Warehouse.objects.create(name="WH", branch=branch)
         self.product = Product.objects.create(
             name="Prod",
             barcode="123",
+
             company=company,
             group=group,
             distributor=distributor,
@@ -57,6 +66,7 @@ class StockAuditAPITest(TestCase):
             fed_tax_ratio=1,
             disable_sale_purchase=False,
         )
+
         self.batch1 = Batch.objects.create(
             product=self.product,
             batch_number="B1",
@@ -100,3 +110,4 @@ class StockAuditAPITest(TestCase):
         self.assertEqual(movements[0].quantity, -2)
         self.assertEqual(movements[1].movement_type, 'ADJUST')
         self.assertEqual(movements[1].quantity, 2)
+

@@ -1,10 +1,10 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import CustomUser
-from .serializers import AuthTokenSerializer, UserSerializer
+from .serializers import AuthTokenSerializer, UserSerializer, PartySerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -37,4 +37,34 @@ class AuthViewSet(viewsets.ViewSet):
     def refresh(self, request):
         token, _ = Token.objects.get_or_create(user=request.user)
         return Response({"token": token.key})
+
+    @action(detail=False, methods=["post"], url_path="register")
+    def register(self, request):
+        """Register a new customer with inactive user account."""
+
+        party_serializer = PartySerializer(data=request.data)
+        party_serializer.is_valid(raise_exception=True)
+
+        password = request.data.get("password")
+        if not password:
+            return Response(
+                {"detail": "Password is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        party = party_serializer.save(party_type="customer")
+
+        CustomUser.objects.create_user(
+            email=party.email,
+            password=password,
+            role="CUSTOMER",
+            is_active=False,
+        )
+
+        return Response(
+            {
+                "message": "Registration successful. Await approval.",
+                "party": PartySerializer(party).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 

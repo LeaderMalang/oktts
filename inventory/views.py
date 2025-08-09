@@ -5,7 +5,11 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+
 from .models import Batch, PriceList, StockMovement
+
+from django.db.models import Sum
+
 
 
 @require_http_methods(["GET"])
@@ -27,6 +31,7 @@ def price_list_detail(request, pk):
         'items': list(items)
     }
     return JsonResponse(data)
+
 
 
 @csrf_exempt
@@ -69,3 +74,21 @@ def stock_audit(request):
         )
 
     return JsonResponse({"results": results})
+
+@require_http_methods(["GET"])
+def inventory_levels(request):
+    """Return aggregated stock levels per product."""
+    levels = (
+        Batch.objects.values("product__id", "product__name")
+        .annotate(total_stock=Sum("quantity"))
+        .order_by("product__id")
+    )
+    data = [
+        {
+            "product": {"id": item["product__id"], "name": item["product__name"]},
+            "totalStock": item["total_stock"] or 0,
+        }
+        for item in levels
+    ]
+    return JsonResponse({"levels": data})
+
