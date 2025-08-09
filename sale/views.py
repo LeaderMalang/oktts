@@ -3,9 +3,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+
+
+from rest_framework import viewsets, status
+
+
 from django.db.models import Q
 
-from rest_framework import status, viewsets
+
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
@@ -165,6 +170,15 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(invoice)
         return Response(serializer.data)
 
+
+    @action(detail=False, methods=["post"])
+    def pos(self, request):
+        """Create a sale invoice using partial order data for POS submissions."""
+        serializer = self.get_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     @action(detail=True, methods=["patch"], url_path="status")
     def status(self, request, pk=None):
         """Update invoice status and optional delivery man."""
@@ -183,6 +197,7 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
         invoice.save(update_fields=update_fields)
         serializer = self.get_serializer(invoice)
         return Response(serializer.data)
+
 
 
 class SaleReturnViewSet(viewsets.ModelViewSet):
