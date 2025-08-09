@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -101,6 +101,25 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
             SaleInvoice.objects.all().prefetch_related("items", "recovery_logs"),
             invoice_no=invoice_no,
         )
+        serializer = self.get_serializer(invoice)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["patch"], url_path="status")
+    def status(self, request, pk=None):
+        """Update invoice status and optional delivery man."""
+        invoice = self.get_object()
+        new_status = request.data.get("status")
+        if not new_status:
+            return Response({"detail": "status is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        invoice.status = new_status
+        update_fields = ["status"]
+
+        if "delivery_man_id" in request.data:
+            invoice.delivery_man_id_id = request.data.get("delivery_man_id")
+            update_fields.append("delivery_man_id")
+
+        invoice.save(update_fields=update_fields)
         serializer = self.get_serializer(invoice)
         return Response(serializer.data)
 
