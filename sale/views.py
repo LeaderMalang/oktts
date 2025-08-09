@@ -1,14 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
-
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+
+from rest_framework import viewsets
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
 from django.db.models import Q
 
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
+
+from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from .models import (
     SaleInvoice,
@@ -198,3 +203,58 @@ class SaleReturnItemViewSet(viewsets.ModelViewSet):
 class RecoveryLogViewSet(viewsets.ModelViewSet):
     queryset = RecoveryLog.objects.all()
     serializer_class = RecoveryLogSerializer
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_recovery_payment(request, order_id):
+    """Append a payment to the recovery log and update the invoice's paid amount."""
+    invoice = get_object_or_404(SaleInvoice, pk=order_id)
+
+    amount = request.data.get("amount")
+    notes = request.data.get("notes", "")
+    try:
+        amount = Decimal(str(amount))
+    except (TypeError, InvalidOperation):
+        return Response({"detail": "Invalid amount."}, status=400)
+
+    employee = getattr(request.user, "employee", None)
+    if hasattr(employee, "first"):
+        employee = employee.first()
+
+    RecoveryLog.objects.create(
+        invoice=invoice,
+        employee=employee,
+        date=date.today(),
+        notes=notes or f"Payment received: {amount}",
+    )
+
+    invoice.paid_amount = (invoice.paid_amount or Decimal("0")) + amount
+    if invoice.paid_amount >= invoice.grand_total:
+        invoice.status = "Paid"
+    invoice.save(update_fields=["paid_amount", "status"])
+
+    serializer = SaleInvoiceSerializer(invoice)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_recovery_note(request, order_id):
+    """Append a recovery note to the log for an invoice."""
+    invoice = get_object_or_404(SaleInvoice, pk=order_id)
+    notes = request.data.get("notes", "")
+
+    employee = getattr(request.user, "employee", None)
+    if hasattr(employee, "first"):
+        employee = employee.first()
+
+    RecoveryLog.objects.create(
+        invoice=invoice,
+        employee=employee,
+        date=date.today(),
+        notes=notes,
+    )
+
+    serializer = SaleInvoiceSerializer(invoice)
+    return Response(serializer.data)
