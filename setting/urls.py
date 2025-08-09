@@ -9,6 +9,7 @@ from .views import (
     DistributorViewSet,
     BranchViewSet,
     WarehouseViewSet,
+    management_all,
 )
 
 
@@ -22,5 +23,6 @@ router.register(r'branches', BranchViewSet)
 router.register(r'warehouses', WarehouseViewSet)
 
 urlpatterns = [
+    path('all/', management_all),
     path('', include(router.urls)),
 ]
