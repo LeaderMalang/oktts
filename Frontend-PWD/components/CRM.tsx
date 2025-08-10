@@ -12,19 +12,19 @@ type ModalFormType = 'lead' | 'interaction';
 const CRMFormModal: React.FC<{ type: ModalFormType; item: any; onClose: () => void; onSave: (data: any) => void; }> = ({ type, item, onClose, onSave }) => {
     const [formData, setFormData] = useState(item || {});
 
-    const handleChange = (name: string, value: any) => { setFormData(prev => ({...prev, [name]: value})); };
+    const handleChange = (name: string, value: any) => { setFormData(prev => ({ ...prev, [name]: value })); };
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { handleChange(e.target.name, e.target.value); };
 
     const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); onSave(formData); };
-    
-    const leadStatusOptions = (['New', 'Contacted', 'Qualified', 'Unqualified', 'Converted'] as LeadStatus[]).map(s => ({value: s, label: s}));
-    const employeeOptions = EMPLOYEES.map(e => ({value: e.id, label: e.name}));
-    const interactionTypeOptions = (['Call', 'Email', 'Meeting', 'Note'] as InteractionType[]).map(t => ({value: t, label: t}));
-    const partyTypeOptions = [{value: 'customer', label: 'Customer'}, {value: 'lead', label: 'Lead'}];
+
+    const leadStatusOptions = (['New', 'Contacted', 'Qualified', 'Unqualified', 'Converted'] as LeadStatus[]).map(s => ({ value: s, label: s }));
+    const employeeOptions = EMPLOYEES.map(e => ({ value: e.id, label: e.name }));
+    const interactionTypeOptions = (['Call', 'Email', 'Meeting', 'Note'] as InteractionType[]).map(t => ({ value: t, label: t }));
+    const partyTypeOptions = [{ value: 'customer', label: 'Customer' }, { value: 'lead', label: 'Lead' }];
 
     const partyOptions = useMemo(() => {
-        if((formData as Interaction).partyType === 'customer') return PARTIES_DATA.filter(p => p.partyType === 'customer').map(c => ({value: c.id, label: c.name}));
-        if((formData as Interaction).partyType === 'lead') return LEADS.map(l => ({value: l.id, label: l.name}));
+        if ((formData as Interaction).partyType === 'customer') return PARTIES_DATA.filter(p => p.partyType === 'customer').map(c => ({ value: c.id, label: c.name }));
+        if ((formData as Interaction).partyType === 'lead') return LEADS.map(l => ({ value: l.id, label: l.name }));
         return [];
     }, [(formData as Interaction).partyType]);
 
@@ -53,7 +53,7 @@ const CRMFormModal: React.FC<{ type: ModalFormType; item: any; onClose: () => vo
                             <div><label>Follow-up Date</label><input type="date" name="followUpDate" value={formData.followUpDate || ''} onChange={handleInputChange} className="mt-1 block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" /></div>
                         </>}
                     </fieldset>
-                     <div className="p-4 bg-gray-50 dark:bg-gray-900 flex justify-end space-x-2">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900 flex justify-end space-x-2">
                         <button type="button" onClick={onClose} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
                         <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Save & Sync</button>
                     </div>
@@ -67,7 +67,7 @@ const CRM: React.FC = () => {
     const [activeTab, setActiveTab] = useState<CrmTab>('leads');
     const [leads, setLeads] = useState<Lead[]>(LEADS);
     const [interactions, setInteractions] = useState<Interaction[]>(INTERACTIONS);
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState<ModalFormType | null>(null);
     const [currentItem, setCurrentItem] = useState<any>(null);
@@ -105,9 +105,8 @@ const CRM: React.FC = () => {
     const TabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
         <button
             onClick={onClick}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors duration-200 ${
-                active ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors duration-200 ${active ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
         >
             {children}
         </button>
@@ -116,13 +115,21 @@ const CRM: React.FC = () => {
     const LeadsTab = () => {
         const [searchTerm, setSearchTerm] = useState('');
         const filteredLeads = useMemo(() => leads.filter(l => l.name.toLowerCase().includes(searchTerm.toLowerCase())), [searchTerm]);
-        return (
+        const res = (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div className="p-4 border-b flex justify-between items-center"><h3 className="text-lg font-semibold">Leads</h3><button onClick={() => openModal('lead')} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Add Lead</button></div>
-                <FilterBar><SearchInput placeholder="Search leads..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></FilterBar>
-                <div className="overflow-x-auto"><table className="min-w-full divide-y">...</table></div>
+                <div className="p-4 border-b flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Leads</h3>
+                    <button onClick={() => openModal('lead')} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Add Lead</button>
+                </div>
+                <FilterBar>
+                    <SearchInput placeholder="Search leads..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </FilterBar>
+                {/* <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y t1">...</table>
+                </div> */}
             </div>
         )
+        return res;
     }
 
     const InteractionsTab = () => {
@@ -134,25 +141,31 @@ const CRM: React.FC = () => {
         const filteredInteractions = useMemo(() => interactions.filter(i => getPartyName(i.partyType, i.partyId).toLowerCase().includes(searchTerm.toLowerCase())), [searchTerm]);
         return (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div className="p-4 border-b flex justify-between items-center"><h3 className="text-lg font-semibold">Interactions</h3><button onClick={() => openModal('interaction')} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Log Interaction</button></div>
-                <FilterBar><SearchInput placeholder="Search by party name..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></FilterBar>
-                <div className="overflow-x-auto"><table className="min-w-full divide-y">...</table></div>
+                <div className="p-4 border-b flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Interactions</h3>
+                    <button onClick={() => openModal('interaction')} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Log Interaction</button>
+                    </div>
+                    <FilterBar>
+                    <SearchInput placeholder="Search by party name..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></FilterBar>
+                {/* <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y t2">...</table>
+                </div> */}
             </div>
         )
     }
-    
+
     return (
-      <div className="space-y-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                  <TabButton active={activeTab === 'leads'} onClick={() => setActiveTab('leads')}>Leads</TabButton>
-                  <TabButton active={activeTab === 'interactions'} onClick={() => setActiveTab('interactions')}>Interactions</TabButton>
-              </nav>
-          </div>
-          {activeTab === 'leads' && <LeadsTab />}
-          {activeTab === 'interactions' && <InteractionsTab />}
-        {isModalOpen && modalType && <CRMFormModal type={modalType} item={currentItem} onClose={closeModal} onSave={handleSave} />}
-      </div>
+        <div className="space-y-6">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+                <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                    <TabButton active={activeTab === 'leads'} onClick={() => setActiveTab('leads')}>Leads</TabButton>
+                    <TabButton active={activeTab === 'interactions'} onClick={() => setActiveTab('interactions')}>Interactions</TabButton>
+                </nav>
+            </div>
+            {activeTab === 'leads' && <LeadsTab />}
+            {activeTab === 'interactions' && <InteractionsTab />}
+            {isModalOpen && modalType && <CRMFormModal type={modalType} item={currentItem} onClose={closeModal} onSave={handleSave} />}
+        </div>
     )
 };
 
