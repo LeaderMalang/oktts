@@ -37,17 +37,17 @@ urlpatterns = [
 
     path('financials/ledger/customer/<int:party_id>/', customer_ledger, name='customer_ledger'),
 
-    path('api/crm/', include('crm.urls')),
-    path('api/tasks/', include('task.urls')),
-    path('api/notifications/', include('notification.urls')),
-    path('api/pricing/', include('pricing.urls')),
-    path('api/expenses/', include('expense.urls')),
-    path('api/investor/', include('investor.urls')),
-    path('api/sync/', include('syncqueue.urls')),
+    path('crm/', include('crm.urls')),
+    path('tasks/', include('task.urls')),
+    path('notifications/', include('notification.urls')),
+    path('pricing/', include('pricing.urls')),
+    path('expenses/', include('expense.urls')),
+    path('investor/', include('investor.urls')),
+    path('sync/', include('syncqueue.urls')),
 
-    path('api/hr/', include('hr.urls')),
-    path('api/user/', include('user.urls')),
-    path('api/management/', include('setting.urls')),
+    path('hr/', include('hr.urls')),
+    path('user/', include('user.urls')),
+    path('management/', include('setting.urls')),
 
 
 
