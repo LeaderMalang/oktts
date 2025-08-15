@@ -22,7 +22,13 @@ class AuthTokenSerializer(serializers.Serializer):
     def validate(self, attrs):
         username = attrs.get("username")
         password = attrs.get("password")
-
+        user_exist =CustomUser.objects.filter(email=username,is_active=True).exists()  # Ensure user exists
+        if user_exist is False:
+            
+            raise serializers.ValidationError(
+                "User with this email does not exist or not active.",
+                code="authorization",
+            )
         user = authenticate(
             request=self.context.get("request"),
             username=username,

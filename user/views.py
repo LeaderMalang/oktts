@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from .models import CustomUser
 from .serializers import AuthTokenSerializer, UserSerializer, PartySerializer
-
+from inventory.models import Party
 
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet providing CRUD operations for users and a `me` endpoint."""
@@ -31,7 +31,8 @@ class AuthViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         token, _ = Token.objects.get_or_create(user=user)
-        return Response({"token": token.key, "user": UserSerializer(user).data})
+        party=Party.objects.filter(email=user.email).get()  # Activate party if exists
+        return Response({"token": token.key, "user": UserSerializer(user).data,"party": PartySerializer(party).data if party else None})
 
     @action(detail=False, methods=["post"], url_path="refresh", permission_classes=[permissions.IsAuthenticated])
     def refresh(self, request):
