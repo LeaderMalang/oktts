@@ -1,34 +1,36 @@
 
+import { defineConfig, loadEnv } from 'vite';
 const CACHE_NAME = 'pharma-erp-cache-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  'https://cdn.tailwindcss.com'
+    '/',
+    '/index.html',
+    '/favicon.svg',
+    'https://cdn.tailwindcss.com'
 
 ];
 
 // --- Caching Strategy ---
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-      try {
-        const manifestResp = await fetch(ASSET_MANIFEST_URL, { cache: 'no-store' });
-        const manifest = await manifestResp.json();
-        const assets = Object.values(manifest).flatMap(entry => {
-          const files = [`/${entry.file}`];
-          if (entry.css) files.push(...entry.css.map(f => `/${f}`));
-          if (entry.assets) files.push(...entry.assets.map(f => `/${f}`));
-          return files;
-        });
-        await cache.addAll([...CORE_ASSETS, ...assets]);
-      } catch (err) {
-        console.error('Asset precache failed', err);
-        await cache.addAll(CORE_ASSETS);
-      }
-    })
-  );
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(async cache => {
+            try {
+                const env = loadEnv(mode, '.', '');
+                const manifestResp = await fetch(env.ASSET_MANIFEST_URL, { cache: 'no-store' });
+                const manifest = await manifestResp.json();
+                const assets = Object.values(manifest).flatMap(entry => {
+                    const files = [`/${entry.file}`];
+                    if (entry.css) files.push(...entry.css.map(f => `/${f}`));
+                    if (entry.assets) files.push(...entry.assets.map(f => `/${f}`));
+                    return files;
+                });
+                await cache.addAll([...CORE_ASSETS, ...assets]);
+            } catch (err) {
+                console.error('Asset precache failed', err);
+                await cache.addAll(CORE_ASSETS);
+            }
+        })
+    );
 });
 
 self.addEventListener('fetch', event => {
@@ -77,18 +79,18 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME, CDN_CACHE];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
+    const cacheWhitelist = [CACHE_NAME, CDN_CACHE];
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
         })
-      );
-    })
-  );
+    );
 });
 
 
