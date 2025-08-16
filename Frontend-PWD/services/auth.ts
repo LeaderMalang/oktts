@@ -30,3 +30,16 @@ export function getCurrentUser(): User | null {
   return stored ? (JSON.parse(stored) as User) : null;
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const response = await fetch(`${baseUrl}/api/user/auth/reset-password/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || 'Failed to request password reset');
+  }
+}
+
