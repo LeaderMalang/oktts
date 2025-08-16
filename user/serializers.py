@@ -43,6 +43,18 @@ class AuthTokenSerializer(serializers.Serializer):
         return attrs
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        if not CustomUser.objects.filter(email=email, is_active=True).exists():
+            raise serializers.ValidationError(
+                "User with this email does not exist or not active."
+            )
+        return attrs
+
+
 class PartySerializer(serializers.ModelSerializer):
     """Serializer for the `Party` model used during registration."""
 
