@@ -65,6 +65,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, setCurrentPage }) => {
           </div>
 
           <div className="flex items-center justify-between">
+
             <button
               type="button"
               onClick={() => setCurrentPage('register')}
@@ -79,6 +80,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, setCurrentPage }) => {
             >
               Forgot password?
             </button>
+
           </div>
 
           <div>
