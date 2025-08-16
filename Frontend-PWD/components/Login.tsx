@@ -65,15 +65,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, setCurrentPage }) => {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <button
-                type="button"
-                onClick={() => setCurrentPage('register')}
-                className="font-medium text-blue-600 hover:text-blue-500"
-              >
-                Don't have an account? Register
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('register')}
+              className="text-sm font-medium text-blue-600 hover:text-blue-500"
+            >
+              Don't have an account? Register
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage('reset-password-request')}
+              className="text-sm font-medium text-blue-600 hover:text-blue-500"
+            >
+              Forgot password?
+            </button>
           </div>
 
           <div>
