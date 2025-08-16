@@ -1,11 +1,11 @@
 
 import { ChartOfAccount, Party, PriceList, PriceListItem, Product } from '../types';
 
-const MANAGEMENT_API_BASE = 'http://127.0.0.1:8000/api/management';
-const INVENTORY_API_BASE = 'http://127.0.0.1:8000/api/inventory';
-const SALE_API_BASE = 'http://127.0.0.1:8000/api/sale';
-const VOUCHER_API_BASE = 'http://127.0.0.1:8000/api/voucher';
-const PRICING_API_BASE = 'http://127.0.0.1:8000/api/pricing';
+const MANAGEMENT_API_BASE = 'http://127.0.0.1:8000/management';
+const INVENTORY_API_BASE = 'http://127.0.0.1:8000/inventory';
+const SALE_API_BASE = 'http://127.0.0.1:8000/sales';
+const VOUCHER_API_BASE = 'http://127.0.0.1:8000/voucher';
+const PRICING_API_BASE = 'http://127.0.0.1:8000/pricing';
 
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {

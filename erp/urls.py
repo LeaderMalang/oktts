@@ -17,7 +17,6 @@ Including another URLconf
 from django.contrib import admin
 
 from django.urls import include, path
-from voucher.views import customer_ledger
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -34,8 +33,7 @@ urlpatterns = [
 
 
     path('inventory/', include('inventory.urls')),
-
-    path('financials/ledger/customer/<int:party_id>/', customer_ledger, name='customer_ledger'),
+    path('voucher/', include('voucher.urls')),
 
     path('crm/', include('crm.urls')),
     path('tasks/', include('task.urls')),
