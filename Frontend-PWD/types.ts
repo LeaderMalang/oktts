@@ -40,6 +40,7 @@ export type Page =
   // New Pages
   | 'login'
   | 'register'
+  | 'reset-password-request'
   | 'order-management'
   | 'order-detail'
   | 'my-orders'

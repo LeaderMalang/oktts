@@ -68,6 +68,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, setCurrentPage }) => {
             <div className="text-sm">
               <button
                 type="button"
+                onClick={() => setCurrentPage('reset-password-request')}
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <div className="text-sm">
+              <button
+                type="button"
                 onClick={() => setCurrentPage('register')}
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
