@@ -8,7 +8,7 @@ import { createPurchaseReturn, updatePurchaseReturn, fetchPurchaseInvoices, fetc
 import {  Product, Party } from '../types';
 
 
-import { fetchProducts, fetchParties } from '../services/inventory';
+import { getProducts, getParties } from '../services/inventory';
 
 
 interface PurchaseReturnProps {
@@ -52,8 +52,8 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
   useEffect(() => {
     fetchPurchaseInvoices().then(setInvoices).catch(() => {});
 
-    fetchProducts().then(setProducts).catch(() => setProducts([]));
-    fetchParties().then(setParties).catch(() => setParties([]));
+    getProducts().then(setProducts).catch(() => setProducts([]));
+    getParties().then(setParties).catch(() => setParties([]));
 
   }, []);
 

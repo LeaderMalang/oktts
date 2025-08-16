@@ -10,5 +10,5 @@ async function request<T>(url: string): Promise<T> {
   return res.json();
 }
 
-export const fetchProducts = () => request<Product[]>(`${API_BASE}/products/`);
-export const fetchParties = () => request<Party[]>(`${API_BASE}/parties/`);
+export const getProducts = () => request<Product[]>(`${API_BASE}/products/`);
+export const getParties = () => request<Party[]>(`${API_BASE}/parties/`);
