@@ -19,6 +19,7 @@ __pycache__/
 !expense/migrations
 !investor/migrations
 !syncqueue/migrations
+!user/migrations
 **/__pycache__/
 
 
