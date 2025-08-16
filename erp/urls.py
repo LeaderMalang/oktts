@@ -44,7 +44,7 @@ urlpatterns = [
     path('sync/', include('syncqueue.urls')),
 
     path('hr/', include('hr.urls')),
-    path('api/user/', include('user.urls')),
+    path('user/', include('user.urls')),
     path('management/', include('setting.urls')),
 
 

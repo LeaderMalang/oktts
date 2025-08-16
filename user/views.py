@@ -21,7 +21,7 @@ from .serializers import (
 
 )
 from inventory.models import Party
-
+from user.models import CustomUser, PasswordResetCode
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet providing CRUD operations for users and a `me` endpoint."""
 
