@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Order, InvoiceItem, Party, Area, PriceListItem, Task, Product, City } from '../types';
 import { BATCHES, ICONS, EMPLOYEES, COMPANIES, PRICE_LISTS, PRICE_LIST_ITEMS } from '../constants';
-import { fetchProducts, fetchParties } from '../services/inventory';
+import { getProducts, getParties } from '../services/inventory';
 import { fetchCities, fetchAreas } from '../services/settings';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
@@ -73,8 +73,8 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
   }, [invoiceToEdit, isEditMode]);
 
   useEffect(() => {
-    fetchProducts().then(setProducts).catch(() => setProducts([]));
-    fetchParties().then(setParties).catch(() => setParties([]));
+    getProducts().then(setProducts).catch(() => setProducts([]));
+    getParties().then(setParties).catch(() => setParties([]));
     Promise.all([fetchCities(), fetchAreas()])
       .then(([c, a]) => {
         setCities(c);

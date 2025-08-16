@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PurchaseInvoice, PurchaseInvoiceItem, Task, InvoiceStatus, Product, Party } from '../types';
 import { EMPLOYEES, ICONS } from '../constants';
-import { fetchProducts, fetchParties } from '../services/inventory';
+import { getProducts, getParties } from '../services/inventory';
 import SearchableSelect from './SearchableSelect';
 import { createPurchaseInvoice, updatePurchaseInvoice } from '../services/purchase';
 
@@ -64,8 +64,8 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
   }, [invoiceToEdit, isEditMode]);
 
   useEffect(() => {
-    fetchProducts().then(setProducts).catch(() => setProducts([]));
-    fetchParties().then(setParties).catch(() => setParties([]));
+    getProducts().then(setProducts).catch(() => setProducts([]));
+    getParties().then(setParties).catch(() => setParties([]));
   }, []);
   const investors = useMemo(() => parties.filter(p => p.partyType === 'investor'), [parties]);
   const suppliers = useMemo(() => parties.filter(p => p.partyType === 'supplier'), [parties]);
