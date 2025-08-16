@@ -13,6 +13,9 @@ class Product(models.Model):
     sales_tax_ratio = models.DecimalField(max_digits=5, decimal_places=2)
     fed_tax_ratio = models.DecimalField(max_digits=5, decimal_places=2)
     disable_sale_purchase = models.BooleanField(default=False)
+    image_1 = models.ImageField(upload_to='static/products/', null=True, blank=True)
+    image_2 = models.ImageField(upload_to='static/products/', null=True, blank=True)
+
 
     @property
     def rate(self):
@@ -27,6 +30,12 @@ class Product(models.Model):
     def stock(self):
         """Total available quantity across all batches."""
         return self.batch_set.aggregate(total=models.Sum('quantity'))['total'] or 0
+    @stock.setter
+    def stock(self, value):
+        self.stock = value
+
+
+   
 
     def __str__(self):
         return self.name

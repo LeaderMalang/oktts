@@ -84,6 +84,8 @@ REST_FRAMEWORK = {
                 'rest_framework.authentication.SessionAuthentication',
             ],
             'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+            'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+            'PAGE_SIZE': 10
 
         }
 MIDDLEWARE = [
@@ -186,3 +188,8 @@ else:
     EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
     DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]

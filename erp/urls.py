@@ -15,7 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -53,4 +54,4 @@ urlpatterns = [
     path('spectacular/', SpectacularAPIView.as_view(), name='schema'),
     path('spectacular/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('spectacular/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-]
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

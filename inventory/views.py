@@ -1,17 +1,20 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.db.models import Sum
+from django.db.models import Sum,Q
 from .models import PriceList, Batch, Product, Party
+from .mypagination import MyCustomPagination
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 
-@require_http_methods(["GET"])
+@api_view(["GET"])
 def price_list_list(request):
     data = list(PriceList.objects.values('id', 'name', 'description'))
-    return JsonResponse({'price_lists': data})
+    return Response({'price_lists': data})
 
 
-@require_http_methods(["GET"])
+@api_view(["GET"])
 def price_list_detail(request, pk):
     price_list = get_object_or_404(PriceList, pk=pk)
     items = price_list.items.select_related('product').values(
@@ -23,10 +26,10 @@ def price_list_detail(request, pk):
         'description': price_list.description,
         'items': list(items)
     }
-    return JsonResponse(data)
+    return Response(data)
 
 
-@require_http_methods(["GET"])
+@api_view(["GET"])
 def inventory_levels(request):
     """Return aggregated stock levels per product."""
     levels = (
@@ -41,45 +44,34 @@ def inventory_levels(request):
         }
         for item in levels
     ]
-    return JsonResponse({"levels": data})
+    return Response({"levels": data})
 
 
-@require_http_methods(["GET"])
+@api_view(["GET"])
 def product_list(request):
     """Return all products with camelCase keys."""
-    products = Product.objects.values(
-        "id",
-        "name",
-        "barcode",
-        "company_id",
-        "group_id",
-        "distributor_id",
-        "trade_price",
-        "retail_price",
-        "sales_tax_ratio",
-        "fed_tax_ratio",
-        "disable_sale_purchase",
-    )
+    q = (request.GET.get("q") or "").strip()
+    qs = (Product.objects.order_by("name"))
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(barcode__icontains=q))
+
+    paginator = MyCustomPagination()
+    page = paginator.paginate_queryset(qs, request)
     data = [
         {
-            "id": p["id"],
-            "name": p["name"],
-            "barcode": p["barcode"],
-            "companyId": p["company_id"],
-            "groupId": p["group_id"],
-            "distributorId": p["distributor_id"],
-            "tradePrice": float(p["trade_price"]),
-            "retailPrice": float(p["retail_price"]),
-            "salesTaxRatio": float(p["sales_tax_ratio"]),
-            "fedTaxRatio": float(p["fed_tax_ratio"]),
-            "disableSalePurchase": p["disable_sale_purchase"],
-        }
-        for p in products
+            "id": p.id, "name": p.name, "barcode": p.barcode,
+            "stock": p.stock or 0, "tradePrice": float(p.trade_price),
+            "retailPrice": float(p.retail_price),"image_1":p.image_1.url if p.image_1 else None,
+            "image_2":p.image_2.url if p.image_2 else None,
+            "salesTaxRatio": float(p.sales_tax_ratio),
+            "fedTaxRatio": float(p.fed_tax_ratio),
+            "disableSalePurchase": p.disable_sale_purchase,
+        } for p in page
     ]
-    return JsonResponse(data, safe=False)
+    return paginator.get_paginated_response(data)
 
 
-@require_http_methods(["GET"])
+@api_view(["GET"])
 def party_list(request):
     """Return all parties with camelCase keys."""
     parties = Party.objects.values(

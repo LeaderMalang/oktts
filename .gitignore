@@ -21,5 +21,5 @@ __pycache__/
 !syncqueue/migrations
 !user/migrations
 **/__pycache__/
-
+/static/
 
