@@ -32,6 +32,7 @@ export function getCurrentUser(): User | null {
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
+
   const response = await fetch(
     `${baseUrl}/api/user/auth/reset-password/request/`,
     {
@@ -68,6 +69,7 @@ export async function confirmPasswordReset(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || 'Password reset confirmation failed');
+
   }
 }
 
