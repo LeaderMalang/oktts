@@ -3,17 +3,22 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
 import random
 
-from .models import CustomUser, PasswordResetCode
+
 from .serializers import (
     AuthTokenSerializer,
     UserSerializer,
     PartySerializer,
+
+    PasswordResetConfirmSerializer,
+
     PasswordResetRequestSerializer,
+
 )
 from inventory.models import Party
 
@@ -79,6 +84,21 @@ class AuthViewSet(viewsets.ViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+
+    @action(detail=False, methods=["post"], url_path="reset-password/confirm")
+    def reset_password_confirm(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+        new_password = serializer.validated_data["new_password"]
+        user.set_password(new_password)
+        user.save()
+
+        serializer.validated_data["reset_code"].delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @action(
         detail=False,
         methods=["post"],
@@ -99,4 +119,5 @@ class AuthViewSet(viewsets.ViewSet):
             [email],
         )
         return Response({"message": "If the email exists, a reset code has been sent."})
+
 
