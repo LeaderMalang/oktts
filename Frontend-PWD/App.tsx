@@ -27,6 +27,8 @@ import POS from './components/POS';
 import Expenses from './components/Expenses';
 import Login from './components/Login';
 import CustomerRegistration from './components/Register';
+import ResetPasswordRequest from './components/ResetPasswordRequest';
+import ResetPasswordConfirm from './components/ResetPasswordConfirm';
 import OrderManagement from './components/OrderManagement';
 import MyOrders from './components/MyOrders';
 import OrderDetail from './components/OrderDetail';
@@ -126,6 +128,8 @@ const App: React.FC = () => {
     return (
       <Routes>
         <Route path={ROUTES.register.path} element={<CustomerRegistration setCurrentPage={setCurrentPage} />} />
+        <Route path={ROUTES['reset-password-request'].path} element={<ResetPasswordRequest setCurrentPage={setCurrentPage} />} />
+        <Route path={ROUTES['reset-password-confirm'].path} element={<ResetPasswordConfirm setCurrentPage={setCurrentPage} />} />
         <Route path={ROUTES.login.path} element={<Login onLogin={handleLogin} setCurrentPage={setCurrentPage} />} />
         <Route path="*" element={<Navigate to={ROUTES.login.path} />} />
       </Routes>
