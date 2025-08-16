@@ -1,9 +1,16 @@
-from django.urls import reverse
+import json
+from datetime import date, timedelta
+
 from django.test import TestCase
+
+from django.urls import reverse
+
+from setting.models import Branch, Company, Distributor, Group, Warehouse
+from .models import Batch, PriceList, PriceListItem, Product, StockMovement
+
 from datetime import date
 
-from setting.models import Company, Group, Distributor, Branch, Warehouse
-from .models import Product, PriceList, PriceListItem, Batch
+
 
 
 class PriceListAPITest(TestCase):
@@ -36,17 +43,20 @@ class PriceListAPITest(TestCase):
         self.assertEqual(data['items'][0]['custom_price'], '8.00')
 
 
-class InventoryLevelsAPITest(TestCase):
+
+class StockAuditAPITest(TestCase):
+
     def setUp(self):
         company = Company.objects.create(name="Comp")
         group = Group.objects.create(name="Grp")
         distributor = Distributor.objects.create(name="Dist")
-        branch = Branch.objects.create(name="Main", address="Addr")
-        warehouse = Warehouse.objects.create(name="W1", branch=branch)
 
-        self.p1 = Product.objects.create(
-            name="Prod1",
-            barcode="111",
+        branch = Branch.objects.create(name="Main", address="addr", sale_invoice_footer="")
+        warehouse = Warehouse.objects.create(name="WH", branch=branch)
+        self.product = Product.objects.create(
+            name="Prod",
+            barcode="123",
+
             company=company,
             group=group,
             distributor=distributor,
@@ -56,52 +66,48 @@ class InventoryLevelsAPITest(TestCase):
             fed_tax_ratio=1,
             disable_sale_purchase=False,
         )
-        self.p2 = Product.objects.create(
-            name="Prod2",
-            barcode="222",
-            company=company,
-            group=group,
-            distributor=distributor,
-            trade_price=20,
-            retail_price=25,
-            sales_tax_ratio=1,
-            fed_tax_ratio=1,
-            disable_sale_purchase=False,
-        )
 
-        Batch.objects.create(
-            product=self.p1,
+        self.batch1 = Batch.objects.create(
+            product=self.product,
             batch_number="B1",
-            expiry_date=date.today(),
+            expiry_date=date.today() + timedelta(days=30),
             purchase_price=5,
-            sale_price=8,
+            sale_price=6,
             quantity=10,
             warehouse=warehouse,
         )
-        Batch.objects.create(
-            product=self.p1,
+        self.batch2 = Batch.objects.create(
+            product=self.product,
             batch_number="B2",
-            expiry_date=date.today(),
+            expiry_date=date.today() + timedelta(days=60),
             purchase_price=5,
-            sale_price=8,
+            sale_price=6,
             quantity=5,
             warehouse=warehouse,
         )
-        Batch.objects.create(
-            product=self.p2,
-            batch_number="B3",
-            expiry_date=date.today(),
-            purchase_price=7,
-            sale_price=9,
-            quantity=7,
-            warehouse=warehouse,
-        )
 
-    def test_inventory_levels_endpoint(self):
-        url = reverse('inventory_levels')
-        response = self.client.get(url)
+    def test_audit_updates_stock_and_records_movements(self):
+        url = reverse('inventory_audit')
+        payload = {
+            "batches": [
+                {"batch_id": self.batch1.id, "count": 8},
+                {"batch_id": self.batch2.id, "count": 7},
+            ]
+        }
+        response = self.client.post(
+            url, data=json.dumps(payload), content_type='application/json'
+        )
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        levels = {item['product']['id']: item['totalStock'] for item in data['levels']}
-        self.assertEqual(levels[self.p1.id], 15)
-        self.assertEqual(levels[self.p2.id], 7)
+
+        self.batch1.refresh_from_db()
+        self.batch2.refresh_from_db()
+        self.assertEqual(self.batch1.quantity, 8)
+        self.assertEqual(self.batch2.quantity, 7)
+
+        movements = StockMovement.objects.order_by('batch__batch_number')
+        self.assertEqual(movements.count(), 2)
+        self.assertEqual(movements[0].movement_type, 'ADJUST')
+        self.assertEqual(movements[0].quantity, -2)
+        self.assertEqual(movements[1].movement_type, 'ADJUST')
+        self.assertEqual(movements[1].quantity, 2)
+
