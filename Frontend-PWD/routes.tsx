@@ -46,6 +46,8 @@ export const ROUTES: Record<Page, RouteMeta> = {
   ledger: { path: '/ledger', title: 'Customer Ledger' },
   login: { path: '/login', title: 'Login' },
   register: { path: '/register', title: 'Register' },
+  'reset-password-request': { path: '/reset-password-request', title: 'Reset Password' },
+  'reset-password-confirm': { path: '/reset-password-confirm', title: 'Confirm Password Reset' },
 };
 
 export default ROUTES;

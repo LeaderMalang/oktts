@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Page } from '../types';
+
 import { confirmPasswordReset } from '../services/auth';
+
 
 interface ResetPasswordConfirmProps {
   setCurrentPage: (page: Page) => void;
 }
 
 const ResetPasswordConfirm: React.FC<ResetPasswordConfirmProps> = ({ setCurrentPage }) => {
+
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -20,11 +23,13 @@ const ResetPasswordConfirm: React.FC<ResetPasswordConfirmProps> = ({ setCurrentP
       setCurrentPage('login');
     } catch {
       setError('Failed to reset password.');
+
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+
       <div className="w-full max-w-md p-8 space-y-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reset Password</h1>
@@ -89,6 +94,7 @@ const ResetPasswordConfirm: React.FC<ResetPasswordConfirmProps> = ({ setCurrentP
             </button>
           </div>
         </form>
+
       </div>
     </div>
   );

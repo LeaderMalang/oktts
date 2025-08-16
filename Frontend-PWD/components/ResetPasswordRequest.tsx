@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import { requestPasswordReset } from '../services/auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,11 +23,13 @@ const ResetPasswordRequest: React.FC = () => {
 
   const goToConfirm = () => {
     navigate('/reset-password-confirm');
+
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reset Password</h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Enter your email to receive reset instructions.</p>
@@ -71,6 +74,7 @@ const ResetPasswordRequest: React.FC = () => {
             className="text-sm font-medium text-blue-600 hover:text-blue-500"
           >
             Already have a code? Confirm reset
+
           </button>
         </div>
       </div>
