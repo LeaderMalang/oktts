@@ -20,13 +20,13 @@ class PartyAdmin(admin.ModelAdmin):
         'name',
         'party_type',
         'phone',
-        'email',
         'category',
         'latitude',
         'longitude',
         'price_list',
+        "business_image",
     )
-    search_fields = ('name', 'phone', 'email', 'category')
+    search_fields = ('name', 'phone', 'category')
     list_filter = ('party_type',)
 
 @admin.register(Batch)

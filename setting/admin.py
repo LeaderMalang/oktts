@@ -1,9 +1,15 @@
 from django.contrib import admin
-from .models import City, Company, Group, Distributor,Branch,Warehouse
+from .models import City,Area, Company, Group, Distributor,Branch,Warehouse
 
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):
     list_display = ['name']
+
+@admin.register(Area)
+class AreaAdmin(admin.ModelAdmin):
+    list_display = ['name', 'city']
+    list_filter = ['city']
+    search_fields = ['name', 'city__name']
 
 @admin.register(Company)
 class GroupAdmin(admin.ModelAdmin):

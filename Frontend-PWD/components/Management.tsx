@@ -55,10 +55,10 @@ const Management: React.FC = () => {
                     managementService.getEntities<ProductGroup>('product-groups'),
                     managementService.getEntities<Distributor>('distributors'),
 
-                    pricingService.getPriceLists(),
+                    //pricingService.getPriceLists(),
 
                     managementService.getProducts(),
-                    managementService.getParties(),
+                    //managementService.getParties(),
                     managementService.getAccounts(),
                     managementService.getPriceLists(),
 

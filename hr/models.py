@@ -31,7 +31,7 @@ class Employee(models.Model):
     name = models.CharField(max_length=100)
 
     phone = models.CharField(max_length=15)
-    email = models.EmailField(blank=True, null=True)
+    # email = models.EmailField(blank=True, null=True)
     cnic = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     active = models.BooleanField(default=True)

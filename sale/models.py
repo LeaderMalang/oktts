@@ -40,7 +40,7 @@ class SaleInvoice(models.Model):
     sub_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     qr_code = models.CharField(max_length=255, blank=True)
-
+    address = models.TextField(blank=True, null=True)
 
    
 
@@ -57,7 +57,7 @@ class SaleInvoice(models.Model):
 
 
     def save(self, *args, **kwargs):
-        self.grand_total = self.total_amount - self.discount + self.tax
+        self.grand_total = self.total_amount or 0 - self.discount or 0 + self.tax or 0
         self.net_amount = self.grand_total
         is_new = self.pk is None
         super().save(*args, **kwargs)
@@ -100,6 +100,7 @@ class SaleInvoiceItem(models.Model):
     discount2 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    bid_amount=models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
 class SaleReturn(models.Model):
     return_no = models.CharField(max_length=50, unique=True)

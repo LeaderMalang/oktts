@@ -4,7 +4,7 @@ const TOKEN_KEY = 'authToken';
 const USER_KEY = 'currentUser';
 const baseUrl = 'http://127.0.0.1:8000';
 export async function login(username: string, password: string): Promise<User> {
-  const response = await fetch(`${baseUrl}/api/user/auth/login/`, {
+  const response = await fetch(`${baseUrl}/user/auth/login/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: username, password }),
@@ -35,7 +35,7 @@ export function getCurrentUser(): User | null {
 export async function requestPasswordReset(email: string): Promise<void> {
 
   const response = await fetch(
-    `${baseUrl}/api/user/auth/reset-password/request/`,
+    `${baseUrl}/user/auth/reset-password/request/`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -55,7 +55,7 @@ export async function confirmPasswordReset(
   newPassword: string
 ): Promise<void> {
   const response = await fetch(
-    `${baseUrl}/api/user/auth/reset-password/confirm/`,
+    `${baseUrl}/user/auth/reset-password/confirm/`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

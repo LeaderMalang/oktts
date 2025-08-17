@@ -24,6 +24,7 @@ class SaleInvoiceItemSerializer(serializers.ModelSerializer):
             "discount2",
             "amount",
             "net_amount",
+            "bid_amount",
         ]
 
 
@@ -63,6 +64,8 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "qr_code",
             "items",
             "recovery_logs",
+            "address",
+            "total_amount",
         ]
 
     def create(self, validated_data):

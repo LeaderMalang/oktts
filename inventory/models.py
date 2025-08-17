@@ -1,6 +1,6 @@
 from django.db import models
 from setting.models import Company, Group, Distributor
-
+from user.models import CustomUser
 # Master Product
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -103,7 +103,7 @@ class Party(models.Model):
     name = models.CharField(max_length=255)
     address = models.TextField()
     phone = models.CharField(max_length=20)
-    email = models.EmailField(null=True, blank=True)
+    # email = models.EmailField(null=True, blank=True)
     party_type = models.CharField(max_length=10, choices=PARTY_TYPES)
     category = models.CharField(max_length=100, null=True, blank=True)
     city = models.ForeignKey("setting.City", null=True, blank=True, on_delete=models.SET_NULL)
@@ -117,6 +117,8 @@ class Party(models.Model):
     credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     chart_of_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    business_image = models.ImageField(upload_to='static/parties/', null=True, blank=True)
     def __str__(self):
         return f"{self.name} ({self.party_type})"
 

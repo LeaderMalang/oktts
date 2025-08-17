@@ -21,7 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # use create_user so password is hashed
-        return User.objects.create_user(**validated_data)
+        return CustomUser.objects.create_user(**validated_data)
 
 class EmployeeSerializer(serializers.ModelSerializer):
     user = UserSerializer()
@@ -33,7 +33,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "role",
             "name",
             "phone",
-            "email",
+            # "email",
             "cnic",
             "address",
             "active",

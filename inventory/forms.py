@@ -11,7 +11,6 @@ class PartyForm(forms.ModelForm):
             'name',
             'address',
             'phone',
-            'email',
             'party_type',
             'category',
             'city',
@@ -23,4 +22,7 @@ class PartyForm(forms.ModelForm):
             'license_no',
             'license_expiry',
             'credit_limit',
+            "user",
+            'business_image',
+            "chart_of_account",
         ]
