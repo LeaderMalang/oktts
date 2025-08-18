@@ -1,6 +1,9 @@
 from django.urls import reverse
 from django.test import TestCase
 from datetime import date
+from django.core.exceptions import ValidationError
+
+from utils.stock import stock_in, stock_out
 
 from setting.models import Company, Group, Distributor, Branch, Warehouse
 from .models import Product, PriceList, PriceListItem, Batch
@@ -105,3 +108,37 @@ class InventoryLevelsAPITest(TestCase):
         levels = {item['product']['id']: item['totalStock'] for item in data['levels']}
         self.assertEqual(levels[self.p1.id], 15)
         self.assertEqual(levels[self.p2.id], 7)
+
+
+class StockMovementTests(TestCase):
+    def setUp(self):
+        company = Company.objects.create(name="Comp")
+        group = Group.objects.create(name="Grp")
+        distributor = Distributor.objects.create(name="Dist")
+        branch = Branch.objects.create(name="Main", address="Addr")
+        self.warehouse = Warehouse.objects.create(name="W1", branch=branch)
+        self.product = Product.objects.create(
+            name="Prod",
+            barcode="999",
+            company=company,
+            group=group,
+            distributor=distributor,
+            trade_price=5,
+            retail_price=7,
+            sales_tax_ratio=0,
+            fed_tax_ratio=0,
+            disable_sale_purchase=False,
+        )
+
+    def test_stock_out_raises_on_shortage(self):
+        stock_in(
+            self.product,
+            quantity=3,
+            batch_number="B1",
+            expiry_date=date.today(),
+            purchase_price=2,
+            sale_price=4,
+            reason="init",
+        )
+        with self.assertRaises(ValidationError):
+            stock_out(self.product, 5, "shortage")
