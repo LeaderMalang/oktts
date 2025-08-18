@@ -7,7 +7,7 @@ from inventory.models import Party, Product, Batch
 
 import logging
 
-from voucher.models import Voucher
+from voucher.models import Voucher, ChartOfAccount
 from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
 
@@ -104,15 +104,16 @@ class SaleInvoiceItem(models.Model):
 class SaleReturn(models.Model):
     return_no = models.CharField(max_length=50, unique=True)
     date = models.DateField()
+    invoice = models.ForeignKey('SaleInvoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='returns')
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        if is_new:
+        if self.items.exists() and not self.voucher:
             for item in self.items.all():
                 stock_return(
                     product=item.product,
@@ -120,19 +121,30 @@ class SaleReturn(models.Model):
                     batch_number=item.batch_number,
                     reason=f"Sale Return {self.return_no}"
                 )
-        if not self.voucher:
+
+            payment_method = (
+                self.invoice.payment_method if self.invoice else "Cash"
+            )
+            if payment_method == "Cash":
+                credit_account = ChartOfAccount.objects.get(code="1001")
+            else:
+                credit_account = self.customer.chart_of_account
+                if self.customer and self.customer.current_balance is not None:
+                    self.customer.current_balance -= self.total_amount
+                    self.customer.save(update_fields=["current_balance"])
+
             voucher = create_voucher_for_transaction(
-            voucher_type_code='SRN',
-            date=self.date,
-            amount=self.total_amount,
-            narration=f"Auto-voucher for Sale Return {self.return_no}",
-            debit_account=self.warehouse.default_sales_account,        # reverse sale
-            credit_account=self.customer.chart_of_account,     # reduce receivable
-            created_by=getattr(self, 'created_by', None),
-            branch=getattr(self, 'branch', None)
-        )
-        self.voucher = voucher
-        self.save(update_fields=['voucher'])
+                voucher_type_code='SRN',
+                date=self.date,
+                amount=self.total_amount,
+                narration=f"Auto-voucher for Sale Return {self.return_no}",
+                debit_account=self.warehouse.default_sales_account,
+                credit_account=credit_account,
+                created_by=getattr(self, 'created_by', None),
+                branch=getattr(self, 'branch', None)
+            )
+            self.voucher = voucher
+            super().save(update_fields=['voucher'])
 
 class SaleReturnItem(models.Model):
     return_invoice = models.ForeignKey(SaleReturn, related_name='items', on_delete=models.CASCADE)
