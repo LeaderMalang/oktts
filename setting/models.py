@@ -14,6 +14,20 @@ class Area(models.Model):
 
 class Company(models.Model):
     name = models.CharField(max_length=100)
+    payroll_expense_account = models.ForeignKey(
+        'voucher.ChartOfAccount',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payroll_expense_company'
+    )
+    payroll_payment_account = models.ForeignKey(
+        'voucher.ChartOfAccount',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payroll_payment_company'
+    )
 
 class Group(models.Model):
     name = models.CharField(max_length=100)
