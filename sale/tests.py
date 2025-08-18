@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -76,13 +77,13 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             sub_total=10,
             discount=0,
             tax=0,
-            grand_total=10,
             paid_amount=10,
-            net_amount=10,
             payment_method="Cash",
             status="Paid",
         )
         self.assertIsNotNone(invoice.voucher)
+        self.assertEqual(invoice.grand_total, Decimal("10"))
+        self.assertEqual(invoice.net_amount, Decimal("0"))
 
     def test_status_action_updates_status_and_delivery_man(self):
         invoice = SaleInvoice.objects.create(
@@ -94,9 +95,6 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             sub_total=10,
             discount=0,
             tax=0,
-            grand_total=10,
-            paid_amount=0,
-            net_amount=10,
             payment_method="Cash",
             status="Pending",
         )

@@ -32,24 +32,36 @@ class SaleInvoice(models.Model):
 
  
 
-    booking_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
-    supplying_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplies')
-    delivery_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
+    booking_man_id = models.ForeignKey(
+        'hr.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='bookings',
+    )
+    supplying_man_id = models.ForeignKey(
+        'hr.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supplies',
+    )
+    delivery_man_id = models.ForeignKey(
+        'hr.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='deliveries',
+    )
     city_id = models.ForeignKey('setting.City', on_delete=models.SET_NULL, null=True, blank=True)
     area_id = models.ForeignKey('setting.Area', on_delete=models.SET_NULL, null=True, blank=True)
     sub_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    qr_code = models.CharField(max_length=255, blank=True)
-
-
-   
-
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     grand_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    qr_code = models.CharField(max_length=255, blank=True)
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
@@ -57,8 +69,15 @@ class SaleInvoice(models.Model):
 
 
     def save(self, *args, **kwargs):
-        self.grand_total = self.total_amount - self.discount + self.tax
-        self.net_amount = self.grand_total
+        # --- Compute financial totals ---
+        # Grand total is base amount minus discount plus tax
+        self.grand_total = (self.total_amount or 0) - (self.discount or 0) + (self.tax or 0)
+        # Paid amount defaults to zero if not provided
+        self.paid_amount = self.paid_amount or 0
+        # Net amount represents the remaining balance after payment
+        self.net_amount = self.grand_total - self.paid_amount
+        # --- End financial calculations ---
+
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
