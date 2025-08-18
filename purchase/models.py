@@ -45,7 +45,7 @@ class PurchaseInvoice(models.Model):
                     reason=f"Purchase Invoice {self.invoice_no}",
                 )
 
-        if not self.voucher:
+        if is_new and not self.voucher:
             voucher = create_voucher_for_transaction(
                 voucher_type_code="PUR",
                 date=self.date,
@@ -57,7 +57,7 @@ class PurchaseInvoice(models.Model):
                 branch=self.branch if hasattr(self, "branch") else None,
             )
             self.voucher = voucher
-            self.save(update_fields=["voucher"])
+            super().save(update_fields=["voucher"])
 
 
 class PurchaseInvoiceItem(models.Model):
@@ -94,19 +94,19 @@ class PurchaseReturn(models.Model):
                     batch_number=item.batch_number,
                     reason=f"Sale Return {self.return_no}"
                 )
-        if not self.voucher:
+        if is_new and not self.voucher:
             voucher = create_voucher_for_transaction(
-            voucher_type_code='PRN',  # Purchase Return
-            date=self.date,
-            amount=self.total_amount,
-            narration=f"Auto-voucher for Purchase Return {self.return_no}",
-            debit_account=self.supplier.chart_of_account,  # refund to supplier
-            credit_account=self.warehouse.purchase_account,  # reduce purchase
-            created_by=getattr(self, 'created_by', None),
-            branch=getattr(self, 'branch', None)
-             )
+                voucher_type_code='PRN',  # Purchase Return
+                date=self.date,
+                amount=self.total_amount,
+                narration=f"Auto-voucher for Purchase Return {self.return_no}",
+                debit_account=self.supplier.chart_of_account,  # refund to supplier
+                credit_account=self.warehouse.purchase_account,  # reduce purchase
+                created_by=getattr(self, 'created_by', None),
+                branch=getattr(self, 'branch', None)
+            )
             self.voucher = voucher
-            self.save(update_fields=['voucher'])
+            super().save(update_fields=['voucher'])
         
 
 class PurchaseReturnItem(models.Model):

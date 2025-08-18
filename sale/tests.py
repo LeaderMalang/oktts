@@ -4,6 +4,8 @@ from decimal import Decimal
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+from django.test import TestCase, SimpleTestCase
+from unittest.mock import patch
 
 from inventory.models import Party, Product
 from setting.models import (
@@ -15,9 +17,9 @@ from setting.models import (
     Group,
     Warehouse,
 )
-from voucher.models import AccountType, ChartOfAccount, VoucherType
+from voucher.models import AccountType, ChartOfAccount, VoucherType, Voucher
 from hr.models import Employee
-from .models import SaleInvoice
+from .models import SaleInvoice, SaleReturn
 
 User = get_user_model()
 
@@ -107,3 +109,27 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
         self.assertEqual(patch_resp.status_code, 200, patch_resp.data)
         self.assertEqual(patch_resp.data["status"], "Paid")
         self.assertEqual(patch_resp.data["delivery_man_id"], employee.id)
+
+
+class SaleReturnVoucherLinkTest(SimpleTestCase):
+    """Verify voucher linkage for sale returns without recursive save calls."""
+
+    def test_sale_return_links_voucher_without_recursion(self):
+        asset = AccountType(name="ASSET")
+        income = AccountType(name="INCOME")
+        customer_account = ChartOfAccount(name="CustAcc", code="1000", account_type=asset)
+        sales_account = ChartOfAccount(name="Sales", code="4000", account_type=income)
+        customer = Party(name="Cust", address="", phone="", party_type="customer", chart_of_account=customer_account)
+        warehouse = Warehouse(name="W1", branch=Branch(name="B", address=""), default_sales_account=sales_account)
+        sr = SaleReturn(return_no="SR-001", date=date.today(), total_amount=10, customer=customer, warehouse=warehouse)
+        dummy_voucher = Voucher(
+            voucher_type=VoucherType(code="SR", name="SR"), date=date.today(), amount=0
+        )
+        with patch("sale.models.create_voucher_for_transaction", return_value=dummy_voucher):
+            with patch("django.db.models.Model.save", return_value=None):
+                dummy_manager = type("M", (), {"all": lambda self: []})()
+                with patch.object(SaleReturn, "items", dummy_manager):
+                    with patch.object(SaleReturn, "save", wraps=SaleReturn.save, autospec=True) as mock_save:
+                        sr.save()
+                        self.assertEqual(mock_save.call_count, 1)
+        self.assertIs(sr.voucher, dummy_voucher)

@@ -139,19 +139,20 @@ class SaleReturn(models.Model):
                     batch_number=item.batch_number,
                     reason=f"Sale Return {self.return_no}"
                 )
-        if not self.voucher:
+
+        if is_new and not self.voucher:
             voucher = create_voucher_for_transaction(
-            voucher_type_code='SRN',
-            date=self.date,
-            amount=self.total_amount,
-            narration=f"Auto-voucher for Sale Return {self.return_no}",
-            debit_account=self.warehouse.default_sales_account,        # reverse sale
-            credit_account=self.customer.chart_of_account,     # reduce receivable
-            created_by=getattr(self, 'created_by', None),
-            branch=getattr(self, 'branch', None)
-        )
-        self.voucher = voucher
-        self.save(update_fields=['voucher'])
+                voucher_type_code='SRN',
+                date=self.date,
+                amount=self.total_amount,
+                narration=f"Auto-voucher for Sale Return {self.return_no}",
+                debit_account=self.warehouse.default_sales_account,        # reverse sale
+                credit_account=self.customer.chart_of_account,     # reduce receivable
+                created_by=getattr(self, 'created_by', None),
+                branch=getattr(self, 'branch', None)
+            )
+            self.voucher = voucher
+            super().save(update_fields=['voucher'])
 
 class SaleReturnItem(models.Model):
     return_invoice = models.ForeignKey(SaleReturn, related_name='items', on_delete=models.CASCADE)
