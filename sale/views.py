@@ -15,6 +15,8 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from notification.models import Notification
+
 from .models import (
     SaleInvoice,
     SaleInvoiceItem,
@@ -56,6 +58,11 @@ def sale_invoice_create(request):
             sale = form.save()
             formset.instance = sale
             formset.save()
+            Notification.objects.create(
+                user=request.user,
+                title="Sale Invoice Created",
+                message=f"Sale invoice {sale.invoice_no} was created."
+            )
             messages.success(request, "Sale invoice created.")
             return redirect(reverse('sale_detail', args=[sale.pk]))
     else:
@@ -101,6 +108,14 @@ def sale_invoice_detail(request, pk):
 class SaleInvoiceViewSet(viewsets.ModelViewSet):
     queryset = SaleInvoice.objects.all().prefetch_related('items', 'recovery_logs')
     serializer_class = SaleInvoiceSerializer
+
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        Notification.objects.create(
+            user=self.request.user,
+            title="Sale Invoice Created",
+            message=f"Sale invoice {invoice.invoice_no} was created."
+        )
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -193,6 +208,14 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
 class SaleReturnViewSet(viewsets.ModelViewSet):
     queryset = SaleReturn.objects.all().prefetch_related('items')
     serializer_class = SaleReturnSerializer
+
+    def perform_create(self, serializer):
+        sale_return = serializer.save()
+        Notification.objects.create(
+            user=self.request.user,
+            title="Sale Return Created",
+            message=f"Sale return {sale_return.return_no} was created."
+        )
 
 
 class SaleReturnItemViewSet(viewsets.ModelViewSet):
