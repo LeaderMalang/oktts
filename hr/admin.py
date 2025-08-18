@@ -8,17 +8,18 @@ from django.utils.timezone import now
 from datetime import timedelta
 from django.db.models import Sum
 from django.contrib import messages
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = ('name', 'phone', 'active')
     list_filter = ( 'active',)
 
-
 @admin.register(EmployeeContract)
 class EmployeeContractAdmin(admin.ModelAdmin):
     list_display = ('employee', 'start_date', 'end_date', 'salary')
-
 
 @admin.register(LeaveRequest)
 class LeaveRequestAdmin(admin.ModelAdmin):
@@ -36,30 +37,48 @@ class LeaveRequestAdmin(admin.ModelAdmin):
         self.message_user(request, f"{updated} leave(s) rejected.")
     reject_selected.short_description = "Reject selected leaves"
 
-
 @admin.register(SalesTarget)
 class SalesTargetAdmin(admin.ModelAdmin):
     list_display = ('employee', 'month', 'target_amount')
     list_filter = ('month',)
-
 
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = ('employee', 'date', 'check_in', 'check_out', 'is_absent')
     list_filter = ('date', 'is_absent')
 
-
 @admin.register(LeaveBalance)
 class LeaveBalanceAdmin(admin.ModelAdmin):
     list_display = ('employee', 'annual', 'sick', 'casual')
 
+# --- PDF Helper ---
+
+def generate_pdf_invoice(invoice):
+    context = {
+        'invoice': invoice,
+        'items': [],
+        'invoice_type': invoice.__class__.__name__,
+    }
+    html = render_to_string("invoices/pdf_invoice.html", context)
+    response = HttpResponse(content_type='application/pdf')
+    pisa.CreatePDF(html, dest=response)
+    return response
+
+# --- Admin Actions ---
+
+def print_invoice_pdf(modeladmin, request, queryset):
+    if queryset.count() == 1:
+        return generate_pdf_invoice(queryset.first())
+    return HttpResponse("Please select only one invoice to print.")
+
+print_invoice_pdf.short_description = "Print Invoice PDF"
 
 @admin.register(PayrollSlip)
 class PayrollSlipAdmin(admin.ModelAdmin):
     list_display = ('employee', 'month', 'base_salary', 'net_salary', 'pdf_link')
     readonly_fields = ('created_on', 'pdf_link')
     list_filter = ('month',)
-    actions = ['generate_payroll']
+    actions = [print_invoice_pdf, 'generate_payroll']
 
     def pdf_link(self, obj):
         # Replace with actual URL generation logic
@@ -103,7 +122,6 @@ class PayrollSlipAdmin(admin.ModelAdmin):
             created += 1
         self.message_user(request, f"{created} payroll slips generated.")
     generate_payroll.short_description = "Generate Payroll for Current Month"
-
 
 @admin.register(DeliveryAssignment)
 class DeliveryAssignmentAdmin(admin.ModelAdmin):
