@@ -113,6 +113,7 @@ class SaleReturnSerializer(serializers.ModelSerializer):
             "id",
             "return_no",
             "date",
+            "invoice",
             "customer",
             "warehouse",
             "total_amount",
@@ -124,5 +125,6 @@ class SaleReturnSerializer(serializers.ModelSerializer):
         sr = SaleReturn.objects.create(**validated_data)
         for item in items_data:
             SaleReturnItem.objects.create(return_invoice=sr, **item)
+        sr.save()
         return sr
 

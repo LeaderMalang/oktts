@@ -7,7 +7,7 @@ from inventory.models import Party, Product, Batch
 
 import logging
 
-from voucher.models import Voucher
+from voucher.models import Voucher, ChartOfAccount
 from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
 
@@ -128,16 +128,17 @@ class SaleReturn(models.Model):
     PAYMENT_CHOICES = (("Cash", "Cash"), ("Credit", "Credit"))
     return_no = models.CharField(max_length=50, unique=True)
     date = models.DateField()
+    invoice = models.ForeignKey('SaleInvoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='returns')
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        if is_new:
+        if self.items.exists() and not self.voucher:
             for item in self.items.all():
                 stock_return(
                     product=item.product,
@@ -146,11 +147,18 @@ class SaleReturn(models.Model):
                     reason=f"Sale Return {self.return_no}"
                 )
 
-        if not self.voucher:
-            if self.payment_method == "Cash":
-                credit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
+
+            payment_method = (
+                self.invoice.payment_method if self.invoice else "Cash"
+            )
+            if payment_method == "Cash":
+                credit_account = ChartOfAccount.objects.get(code="1001")
             else:
                 credit_account = self.customer.chart_of_account
+                if self.customer and self.customer.current_balance is not None:
+                    self.customer.current_balance -= self.total_amount
+                    self.customer.save(update_fields=["current_balance"])
+
 
             voucher = create_voucher_for_transaction(
                 voucher_type_code='SRN',
