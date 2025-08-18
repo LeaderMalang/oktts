@@ -17,11 +17,9 @@ class SaleInvoiceForm(forms.ModelForm):
             'warehouse',
             'salesman',
 
-           
             'total_amount',
             'discount',
             'tax',
-            'grand_total',
             'payment_method',
             'paid_amount',
             'status',
@@ -32,11 +30,7 @@ class SaleInvoiceForm(forms.ModelForm):
         total = cleaned_data.get('total_amount') or 0
         discount = cleaned_data.get('discount') or 0
         tax = cleaned_data.get('tax') or 0
-        grand_total = cleaned_data.get('grand_total') or 0
-        expected_grand_total = total - discount + tax
-        if grand_total != expected_grand_total:
-            self.add_error('grand_total', 'Grand total must equal total minus discount plus tax.')
-
+        grand_total = total - discount + tax
         paid = cleaned_data.get('paid_amount') or 0
         if paid > grand_total:
             self.add_error('paid_amount', 'Paid amount cannot exceed grand total.')
