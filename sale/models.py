@@ -178,7 +178,7 @@ class SaleReturn(models.Model):
                 narration=f"Auto-voucher for Sale Return {self.return_no}",
 
                 debit_account=self.warehouse.default_sales_account,  # reverse sale
-                credit_account=self.customer.chart_of_account,  # reduce receivable
+                credit_account=credit_account,  # reduce receivable
                 created_by=getattr(self, 'created_by', None),
                 branch=getattr(self, 'branch', None),
             )
