@@ -32,24 +32,36 @@ class SaleInvoice(models.Model):
 
  
 
-    booking_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
-    supplying_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplies')
-    delivery_man_id = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
+    booking_man_id = models.ForeignKey(
+        'hr.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='bookings',
+    )
+    supplying_man_id = models.ForeignKey(
+        'hr.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supplies',
+    )
+    delivery_man_id = models.ForeignKey(
+        'hr.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='deliveries',
+    )
     city_id = models.ForeignKey('setting.City', on_delete=models.SET_NULL, null=True, blank=True)
     area_id = models.ForeignKey('setting.Area', on_delete=models.SET_NULL, null=True, blank=True)
     sub_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    qr_code = models.CharField(max_length=255, blank=True)
-
-
-   
-
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     grand_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    qr_code = models.CharField(max_length=255, blank=True)
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
@@ -57,8 +69,15 @@ class SaleInvoice(models.Model):
 
 
     def save(self, *args, **kwargs):
-        self.grand_total = self.total_amount - self.discount + self.tax
-        self.net_amount = self.grand_total
+        # --- Compute financial totals ---
+        # Grand total is base amount minus discount plus tax
+        self.grand_total = (self.total_amount or 0) - (self.discount or 0) + (self.tax or 0)
+        # Paid amount defaults to zero if not provided
+        self.paid_amount = self.paid_amount or 0
+        # Net amount represents the remaining balance after payment
+        self.net_amount = self.grand_total - self.paid_amount
+        # --- End financial calculations ---
+
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
@@ -71,13 +90,17 @@ class SaleInvoice(models.Model):
                 )
 
         if not self.voucher:
+            if self.payment_method == "Cash":
+                debit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
+            else:
+                debit_account = self.customer.chart_of_account
             voucher = create_voucher_for_transaction(
                 voucher_type_code='SAL',
                 date=self.date,
                 amount=self.grand_total,
                 narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
-                debit_account=self.customer.chart_of_account,  # customer owes us
-                credit_account=self.warehouse.default_sales_account,   # record sale revenue
+                debit_account=debit_account,
+                credit_account=self.warehouse.default_sales_account,
                 created_by=getattr(self, 'created_by', None),
                 branch=getattr(self, 'branch', None)
             )
@@ -102,12 +125,14 @@ class SaleInvoiceItem(models.Model):
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
 
 class SaleReturn(models.Model):
+    PAYMENT_CHOICES = (("Cash", "Cash"), ("Credit", "Credit"))
     return_no = models.CharField(max_length=50, unique=True)
     date = models.DateField()
     invoice = models.ForeignKey('SaleInvoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='returns')
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     def save(self, *args, **kwargs):
@@ -122,6 +147,7 @@ class SaleReturn(models.Model):
                     reason=f"Sale Return {self.return_no}"
                 )
 
+
             payment_method = (
                 self.invoice.payment_method if self.invoice else "Cash"
             )
@@ -133,13 +159,16 @@ class SaleReturn(models.Model):
                     self.customer.current_balance -= self.total_amount
                     self.customer.save(update_fields=["current_balance"])
 
+
             voucher = create_voucher_for_transaction(
                 voucher_type_code='SRN',
                 date=self.date,
                 amount=self.total_amount,
                 narration=f"Auto-voucher for Sale Return {self.return_no}",
+
                 debit_account=self.warehouse.default_sales_account,
                 credit_account=credit_account,
+
                 created_by=getattr(self, 'created_by', None),
                 branch=getattr(self, 'branch', None)
             )

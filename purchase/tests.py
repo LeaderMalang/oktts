@@ -1,5 +1,6 @@
 from datetime import date
 
+
 from rest_framework.test import APITestCase
 
 from inventory.models import Party, Product, Batch
@@ -20,11 +21,14 @@ class PurchaseReturnVoucherTest(APITestCase):
         self.supplier_account = ChartOfAccount.objects.create(name="Supplier", code="2001", account_type=liability)
         self.purchase_account = ChartOfAccount.objects.create(name="Purchase", code="5001", account_type=expense)
 
+
+
         self.branch = Branch.objects.create(name="Main", address="addr")
         self.warehouse = Warehouse.objects.create(
             name="W1",
             branch=self.branch,
             default_purchase_account=self.purchase_account,
+
         )
 
         company = Company.objects.create(name="C1")
@@ -139,3 +143,4 @@ class PurchaseReturnVoucherTest(APITestCase):
         self.assertEqual(credit.account, self.purchase_account)
         self.supplier.refresh_from_db()
         self.assertEqual(self.supplier.current_balance, 30)
+
