@@ -1,4 +1,9 @@
 from django.contrib import admin
+from django.contrib import admin
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+
 from .models import (
     PurchaseInvoice,
     PurchaseInvoiceItem,
@@ -10,6 +15,31 @@ from .models import (
 class PurchaseInvoiceItemInline(admin.TabularInline):
     model = PurchaseInvoiceItem
     extra = 1
+
+
+# --- PDF Helper ---
+
+def generate_pdf_invoice(invoice):
+    context = {
+        'invoice': invoice,
+        'items': invoice.items.all() if hasattr(invoice, 'items') else [],
+        'invoice_type': invoice.__class__.__name__,
+    }
+    html = render_to_string("invoices/pdf_invoice.html", context)
+    response = HttpResponse(content_type='application/pdf')
+    pisa.CreatePDF(html, dest=response)
+    return response
+
+
+# --- Admin Actions ---
+
+def print_invoice_pdf(modeladmin, request, queryset):
+    if queryset.count() == 1:
+        return generate_pdf_invoice(queryset.first())
+    return HttpResponse("Please select only one invoice to print.")
+
+
+print_invoice_pdf.short_description = "Print Invoice PDF"
 
 class PurchaseInvoiceAdmin(admin.ModelAdmin):
     list_display = (
@@ -26,6 +56,7 @@ class PurchaseInvoiceAdmin(admin.ModelAdmin):
     search_fields = ('invoice_no', 'company_invoice_number', 'supplier__name')
     inlines = [PurchaseInvoiceItemInline]
     readonly_fields = ('voucher',)
+    actions = [print_invoice_pdf]
 
     # def save_model(self, request, obj, form, change):
     #     obj.total_amount = sum([item.amount for item in obj.items.all()])
@@ -41,6 +72,7 @@ class PurchaseReturnAdmin(admin.ModelAdmin):
     search_fields = ('return_no', 'supplier__name')
     inlines = [PurchaseReturnItemInline]
     readonly_fields = ('voucher',)
+    actions = [print_invoice_pdf]
 
     # def save_model(self, request, obj, form, change):
     #     obj.total_amount = sum([item.amount for item in obj.items.all()])

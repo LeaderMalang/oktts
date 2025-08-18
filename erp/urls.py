@@ -42,6 +42,7 @@ urlpatterns = [
     path('pricing/', include('pricing.urls')),
     path('expenses/', include('expense.urls')),
     path('investor/', include('investor.urls')),
+    path('reports/', include('report.urls')),
     path('sync/', include('syncqueue.urls')),
 
     path('hr/', include('hr.urls')),

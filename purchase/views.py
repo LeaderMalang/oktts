@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
+from utils.notifications import notify_user_and_party
+
 from .models import PurchaseInvoice, PurchaseReturn, InvestorTransaction
 from .serializers import (
     PurchaseInvoiceSerializer,
@@ -38,6 +40,15 @@ class PurchaseInvoiceViewSet(viewsets.ModelViewSet):
             )
 
         return qs
+
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        notify_user_and_party(
+            user=self.request.user,
+            party=invoice.supplier,
+            title="Purchase Invoice Created",
+            message=f"Purchase invoice {invoice.invoice_no} created.",
+        )
 
     @action(detail=False, methods=["get"], url_path="by-number/(?P<invoice_no>[^/.]+)")
     def retrieve_by_number(self, request, invoice_no=None):
@@ -75,6 +86,15 @@ class PurchaseReturnViewSet(viewsets.ModelViewSet):
             )
 
         return qs
+
+    def perform_create(self, serializer):
+        purchase_return = serializer.save()
+        notify_user_and_party(
+            user=self.request.user,
+            party=purchase_return.supplier,
+            title="Purchase Return Created",
+            message=f"Purchase return {purchase_return.return_no} created.",
+        )
 
 
 class InvestorTransactionViewSet(viewsets.ModelViewSet):

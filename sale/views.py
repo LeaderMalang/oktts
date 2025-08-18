@@ -15,6 +15,10 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+
+from utils.notifications import notify_user_and_party
+
+
 from .models import (
     SaleInvoice,
     SaleInvoiceItem,
@@ -56,6 +60,11 @@ def sale_invoice_create(request):
             sale = form.save()
             formset.instance = sale
             formset.save()
+            Notification.objects.create(
+                user=request.user,
+                title="Sale Invoice Created",
+                message=f"Sale invoice {sale.invoice_no} was created."
+            )
             messages.success(request, "Sale invoice created.")
             return redirect(reverse('sale_detail', args=[sale.pk]))
     else:
@@ -102,6 +111,14 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
     queryset = SaleInvoice.objects.all().prefetch_related('items', 'recovery_logs')
     serializer_class = SaleInvoiceSerializer
 
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        Notification.objects.create(
+            user=self.request.user,
+            title="Sale Invoice Created",
+            message=f"Sale invoice {invoice.invoice_no} was created."
+        )
+
     def get_queryset(self):
         qs = super().get_queryset()
         status_param = self.request.query_params.get("status")
@@ -124,6 +141,15 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
             )
 
         return qs
+
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        notify_user_and_party(
+            user=self.request.user,
+            party=invoice.customer,
+            title="Sale Invoice Created",
+            message=f"Sale invoice {invoice.invoice_no} created.",
+        )
 
     @extend_schema(
         parameters=[
@@ -193,6 +219,17 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
 class SaleReturnViewSet(viewsets.ModelViewSet):
     queryset = SaleReturn.objects.all().prefetch_related('items')
     serializer_class = SaleReturnSerializer
+
+    def perform_create(self, serializer):
+        sale_return = serializer.save()
+
+        notify_user_and_party(
+            user=self.request.user,
+            party=sale_return.customer,
+            title="Sale Return Created",
+            message=f"Sale return {sale_return.return_no} created.",
+
+        )
 
 
 class SaleReturnItemViewSet(viewsets.ModelViewSet):
