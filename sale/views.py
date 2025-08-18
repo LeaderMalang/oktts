@@ -15,7 +15,9 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-from notification.models import Notification
+
+from utils.notifications import notify_user_and_party
+
 
 from .models import (
     SaleInvoice,
@@ -140,6 +142,15 @@ class SaleInvoiceViewSet(viewsets.ModelViewSet):
 
         return qs
 
+    def perform_create(self, serializer):
+        invoice = serializer.save()
+        notify_user_and_party(
+            user=self.request.user,
+            party=invoice.customer,
+            title="Sale Invoice Created",
+            message=f"Sale invoice {invoice.invoice_no} created.",
+        )
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
@@ -211,10 +222,13 @@ class SaleReturnViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         sale_return = serializer.save()
-        Notification.objects.create(
+
+        notify_user_and_party(
             user=self.request.user,
+            party=sale_return.customer,
             title="Sale Return Created",
-            message=f"Sale return {sale_return.return_no} was created."
+            message=f"Sale return {sale_return.return_no} created.",
+
         )
 
 
