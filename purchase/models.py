@@ -45,11 +45,13 @@ class PurchaseInvoice(models.Model):
                     reason=f"Purchase Invoice {self.invoice_no}",
                 )
 
+
         if not self.voucher:
             if self.payment_method == "Cash":
                 credit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
             else:
                 credit_account = self.supplier.chart_of_account
+
             voucher = create_voucher_for_transaction(
                 voucher_type_code="PUR",
                 date=self.date,
@@ -100,6 +102,7 @@ class PurchaseReturn(models.Model):
                     batch_number=item.batch_number,
                     reason=f"Sale Return {self.return_no}"
                 )
+
         if not self.voucher:
             if self.payment_method == "Cash":
                 debit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
@@ -112,6 +115,7 @@ class PurchaseReturn(models.Model):
                 narration=f"Auto-voucher for Purchase Return {self.return_no}",
                 debit_account=debit_account,
                 credit_account=self.warehouse.default_purchase_account,
+
                 created_by=getattr(self, 'created_by', None),
                 branch=getattr(self, 'branch', None)
             )

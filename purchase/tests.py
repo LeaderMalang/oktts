@@ -1,5 +1,4 @@
 from datetime import date
-
 from django.test import TestCase
 
 from inventory.models import Party
@@ -78,4 +77,5 @@ class PurchaseInvoiceVoucherTest(TestCase):
         credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
         self.assertEqual(debit_entry.account, self.purchase_account)
         self.assertEqual(credit_entry.account, self.supplier_account)
+
 
