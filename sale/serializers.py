@@ -55,8 +55,8 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "sub_total",
             "discount",
             "tax",
-            "grand_total",
             "paid_amount",
+            "grand_total",
             "net_amount",
             "payment_method",
             "status",
@@ -64,6 +64,7 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "items",
             "recovery_logs",
         ]
+        read_only_fields = ("grand_total", "net_amount")
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
@@ -76,13 +77,7 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
         total = data.get("sub_total") or 0
         discount = data.get("discount") or 0
         tax = data.get("tax") or 0
-        grand_total = data.get("grand_total") or 0
-        expected_grand_total = total - discount + tax
-        if grand_total != expected_grand_total:
-            raise serializers.ValidationError(
-                {"grand_total": "Grand total must equal sub total minus discount plus tax."}
-            )
-
+        grand_total = total - discount + tax
         paid = data.get("paid_amount") or 0
         if paid > grand_total:
             raise serializers.ValidationError(
