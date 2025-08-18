@@ -25,7 +25,11 @@ class SaleReturnItemInline(admin.TabularInline):
 # --- PDF Helper ---
 
 def generate_pdf_invoice(invoice):
-    context = {'invoice': invoice}
+    context = {
+        'invoice': invoice,
+        'items': invoice.items.all() if hasattr(invoice, 'items') else [],
+        'invoice_type': invoice.__class__.__name__,
+    }
     html = render_to_string("invoices/pdf_invoice.html", context)
     response = HttpResponse(content_type='application/pdf')
     pisa.CreatePDF(html, dest=response)
@@ -99,6 +103,7 @@ class SaleReturnAdmin(admin.ModelAdmin):
     list_filter = ['date', 'warehouse']
     search_fields = ['return_no', 'customer__name']
     inlines = [SaleReturnItemInline]
+    actions = [print_invoice_pdf]
 
 
 @admin.register(RecoveryLog)
