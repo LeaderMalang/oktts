@@ -45,6 +45,11 @@ class PurchaseInvoice(models.Model):
                     reason=f"Purchase Invoice {self.invoice_no}",
                 )
 
+            outstanding = self.grand_total - self.paid_amount
+            if outstanding:
+                self.supplier.current_balance += outstanding
+                self.supplier.save(update_fields=["current_balance"])
+
         if not self.voucher:
             voucher = create_voucher_for_transaction(
                 voucher_type_code="PUR",
@@ -94,17 +99,19 @@ class PurchaseReturn(models.Model):
                     batch_number=item.batch_number,
                     reason=f"Sale Return {self.return_no}"
                 )
+            self.supplier.current_balance -= self.total_amount
+            self.supplier.save(update_fields=["current_balance"])
         if not self.voucher:
             voucher = create_voucher_for_transaction(
-            voucher_type_code='PRN',  # Purchase Return
-            date=self.date,
-            amount=self.total_amount,
-            narration=f"Auto-voucher for Purchase Return {self.return_no}",
-            debit_account=self.supplier.chart_of_account,  # refund to supplier
-            credit_account=self.warehouse.purchase_account,  # reduce purchase
-            created_by=getattr(self, 'created_by', None),
-            branch=getattr(self, 'branch', None)
-             )
+                voucher_type_code='PRN',  # Purchase Return
+                date=self.date,
+                amount=self.total_amount,
+                narration=f"Auto-voucher for Purchase Return {self.return_no}",
+                debit_account=self.supplier.chart_of_account,  # refund to supplier
+                credit_account=self.warehouse.default_purchase_account,  # reduce purchase
+                created_by=getattr(self, 'created_by', None),
+                branch=getattr(self, 'branch', None),
+            )
             self.voucher = voucher
             self.save(update_fields=['voucher'])
         
