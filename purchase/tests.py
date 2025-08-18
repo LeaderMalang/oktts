@@ -1,66 +1,81 @@
 from datetime import date
-
-from django.test import SimpleTestCase
-from unittest.mock import patch
+from django.test import TestCase
 
 from inventory.models import Party
 from setting.models import Branch, Warehouse
-from voucher.models import AccountType, ChartOfAccount, Voucher, VoucherType
+from voucher.models import AccountType, ChartOfAccount, VoucherType
 
-from .models import PurchaseInvoice, PurchaseReturn
+from .models import PurchaseInvoice
 
 
-class PurchaseVoucherLinkTest(SimpleTestCase):
-    """Ensure voucher linking happens once without recursive saves."""
+class PurchaseInvoiceVoucherTest(TestCase):
+    """Ensure vouchers use appropriate accounts based on payment method."""
 
-    def _supplier_and_warehouse(self):
-        asset = AccountType(name="ASSET")
-        expense = AccountType(name="EXPENSE")
-        supplier_account = ChartOfAccount(name="SuppAcc", code="2000", account_type=asset)
-        purchase_account = ChartOfAccount(name="PurchAcc", code="5000", account_type=expense)
-
-        supplier = Party(
-            name="Supp", address="", phone="", party_type="supplier", chart_of_account=supplier_account
+    def setUp(self):
+        asset = AccountType.objects.create(name="ASSET")
+        liability = AccountType.objects.create(name="LIABILITY")
+        expense = AccountType.objects.create(name="EXPENSE")
+        self.cash_account = ChartOfAccount.objects.create(
+            name="Cash", code="1100", account_type=asset
         )
-        warehouse = Warehouse(
-            name="W1", branch=Branch(name="B", address=""), default_purchase_account=purchase_account
+        self.supplier_account = ChartOfAccount.objects.create(
+            name="Supplier", code="2000", account_type=liability
         )
-        warehouse.purchase_account = purchase_account
-        return supplier, warehouse
+        self.purchase_account = ChartOfAccount.objects.create(
+            name="Purchases", code="5000", account_type=expense
+        )
+        self.branch = Branch.objects.create(name="Main", address="addr")
+        self.warehouse = Warehouse.objects.create(
+            name="W1",
+            branch=self.branch,
+            default_purchase_account=self.purchase_account,
+            default_cash_account=self.cash_account,
+        )
+        self.supplier = Party.objects.create(
+            name="Supp",
+            address="addr",
+            phone="123",
+            party_type="supplier",
+            chart_of_account=self.supplier_account,
+        )
+        VoucherType.objects.create(name="Purchase", code="PUR")
 
-    def test_purchase_invoice_voucher_link_no_recursion(self):
-        supplier, warehouse = self._supplier_and_warehouse()
-        invoice = PurchaseInvoice(
-            invoice_no="PI-001", date=date.today(), total_amount=100, grand_total=100, supplier=supplier, warehouse=warehouse
+    def test_cash_purchase_invoice_uses_cash_account(self):
+        invoice = PurchaseInvoice.objects.create(
+            invoice_no="PINV-001",
+            date=date.today(),
+            supplier=self.supplier,
+            warehouse=self.warehouse,
+            total_amount=10,
+            discount=0,
+            tax=0,
+            grand_total=10,
+            payment_method="Cash",
+            paid_amount=10,
+            status="Paid",
         )
-        dummy_voucher = Voucher(
-            voucher_type=VoucherType(code="X", name="X"), date=date.today(), amount=0
-        )
-        with patch("purchase.models.create_voucher_for_transaction", return_value=dummy_voucher):
-            with patch("django.db.models.Model.save", return_value=None):
-                dummy_manager = type("M", (), {"all": lambda self: []})()
-                with patch.object(PurchaseInvoice, "items", dummy_manager):
-                    with patch.object(
-                        PurchaseInvoice, "save", wraps=PurchaseInvoice.save, autospec=True
-                    ) as mock_save:
-                        invoice.save()
-                        self.assertEqual(mock_save.call_count, 1)
-        self.assertIs(invoice.voucher, dummy_voucher)
+        debit_entry = invoice.voucher.entries.get(debit=invoice.grand_total)
+        credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
+        self.assertEqual(debit_entry.account, self.purchase_account)
+        self.assertEqual(credit_entry.account, self.cash_account)
 
-    def test_purchase_return_voucher_link_no_recursion(self):
-        supplier, warehouse = self._supplier_and_warehouse()
-        pr = PurchaseReturn(return_no="PR-001", date=date.today(), total_amount=50, supplier=supplier, warehouse=warehouse)
-        dummy_voucher = Voucher(
-            voucher_type=VoucherType(code="Y", name="Y"), date=date.today(), amount=0
+    def test_credit_purchase_invoice_uses_supplier_account(self):
+        invoice = PurchaseInvoice.objects.create(
+            invoice_no="PINV-002",
+            date=date.today(),
+            supplier=self.supplier,
+            warehouse=self.warehouse,
+            total_amount=10,
+            discount=0,
+            tax=0,
+            grand_total=10,
+            payment_method="Credit",
+            paid_amount=0,
+            status="Pending",
         )
-        with patch("purchase.models.create_voucher_for_transaction", return_value=dummy_voucher):
-            with patch("django.db.models.Model.save", return_value=None):
-                dummy_manager = type("M", (), {"all": lambda self: []})()
-                with patch.object(PurchaseReturn, "items", dummy_manager):
-                    with patch.object(
-                        PurchaseReturn, "save", wraps=PurchaseReturn.save, autospec=True
-                    ) as mock_save:
-                        pr.save()
-                        self.assertEqual(mock_save.call_count, 1)
-        self.assertIs(pr.voucher, dummy_voucher)
+        debit_entry = invoice.voucher.entries.get(debit=invoice.grand_total)
+        credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
+        self.assertEqual(debit_entry.account, self.purchase_account)
+        self.assertEqual(credit_entry.account, self.supplier_account)
+
 

@@ -33,12 +33,18 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
         self.customer_account = ChartOfAccount.objects.create(
             name="Customer", code="1000", account_type=asset
         )
+        self.cash_account = ChartOfAccount.objects.create(
+            name="Cash", code="1100", account_type=asset
+        )
         self.sales_account = ChartOfAccount.objects.create(
             name="Sales", code="4000", account_type=income
         )
         self.branch = Branch.objects.create(name="Main", address="addr")
         self.warehouse = Warehouse.objects.create(
-            name="W1", branch=self.branch, default_sales_account=self.sales_account
+            name="W1",
+            branch=self.branch,
+            default_sales_account=self.sales_account,
+            default_cash_account=self.cash_account,
         )
         self.city = City.objects.create(name="Metropolis")
         self.area = Area.objects.create(name="Center", city=self.city)
@@ -69,7 +75,7 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
         VoucherType.objects.create(name="Sale", code="SAL")
         self.user = User.objects.create_user("user@example.com", "pass")
 
-    def test_voucher_linked_on_creation(self):
+    def test_cash_invoice_uses_cash_account(self):
         invoice = SaleInvoice.objects.create(
             invoice_no="INV-001",
             date=date.today(),
@@ -83,9 +89,33 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             payment_method="Cash",
             status="Paid",
         )
-        self.assertIsNotNone(invoice.voucher)
-        self.assertEqual(invoice.grand_total, Decimal("10"))
-        self.assertEqual(invoice.net_amount, Decimal("0"))
+
+        debit_entry = invoice.voucher.entries.get(debit=invoice.grand_total)
+        credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
+        self.assertEqual(debit_entry.account, self.cash_account)
+        self.assertEqual(credit_entry.account, self.sales_account)
+
+    def test_credit_invoice_uses_customer_account(self):
+        invoice = SaleInvoice.objects.create(
+            invoice_no="INV-003",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=10,
+            sub_total=10,
+            discount=0,
+            tax=0,
+            grand_total=10,
+            paid_amount=0,
+            net_amount=10,
+            payment_method="Credit",
+            status="Pending",
+        )
+        debit_entry = invoice.voucher.entries.get(debit=invoice.grand_total)
+        credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
+        self.assertEqual(debit_entry.account, self.customer_account)
+        self.assertEqual(credit_entry.account, self.sales_account)
+
 
     def test_status_action_updates_status_and_delivery_man(self):
         invoice = SaleInvoice.objects.create(

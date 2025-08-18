@@ -45,14 +45,20 @@ class PurchaseInvoice(models.Model):
                     reason=f"Purchase Invoice {self.invoice_no}",
                 )
 
-        if is_new and not self.voucher:
+
+        if not self.voucher:
+            if self.payment_method == "Cash":
+                credit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
+            else:
+                credit_account = self.supplier.chart_of_account
+
             voucher = create_voucher_for_transaction(
                 voucher_type_code="PUR",
                 date=self.date,
                 amount=self.grand_total,
                 narration=f"Auto-voucher for Purchase Invoice {self.invoice_no}",
                 debit_account=self.warehouse.default_purchase_account,
-                credit_account=self.supplier.chart_of_account,
+                credit_account=credit_account,
                 created_by=self.created_by if hasattr(self, "created_by") else None,
                 branch=self.branch if hasattr(self, "branch") else None,
             )
@@ -76,11 +82,13 @@ class PurchaseInvoiceItem(models.Model):
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
 
 class PurchaseReturn(models.Model):
+    PAYMENT_CHOICES = (("Cash", "Cash"), ("Credit", "Credit"))
     return_no = models.CharField(max_length=50, unique=True)
     date = models.DateField()
     supplier = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'supplier'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -94,14 +102,20 @@ class PurchaseReturn(models.Model):
                     batch_number=item.batch_number,
                     reason=f"Sale Return {self.return_no}"
                 )
-        if is_new and not self.voucher:
+
+        if not self.voucher:
+            if self.payment_method == "Cash":
+                debit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
+            else:
+                debit_account = self.supplier.chart_of_account
             voucher = create_voucher_for_transaction(
-                voucher_type_code='PRN',  # Purchase Return
+                voucher_type_code='PRN',
                 date=self.date,
                 amount=self.total_amount,
                 narration=f"Auto-voucher for Purchase Return {self.return_no}",
-                debit_account=self.supplier.chart_of_account,  # refund to supplier
-                credit_account=self.warehouse.purchase_account,  # reduce purchase
+                debit_account=debit_account,
+                credit_account=self.warehouse.default_purchase_account,
+
                 created_by=getattr(self, 'created_by', None),
                 branch=getattr(self, 'branch', None)
             )
