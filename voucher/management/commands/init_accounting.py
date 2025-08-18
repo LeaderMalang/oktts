@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from voucher.models import AccountType, ChartOfAccount
 from inventory.models import Party
-from setting.models import Warehouse
+from setting.models import Warehouse, Company
 from django.db import transaction
 
 DEFAULT_COA = {
@@ -65,5 +65,12 @@ class Command(BaseCommand):
             if not wh.default_purchase_account:
                 wh.default_purchase_account = ChartOfAccount.objects.get(code="5001")
             wh.save()
+
+        for comp in Company.objects.all():
+            if not comp.payroll_expense_account:
+                comp.payroll_expense_account = ChartOfAccount.objects.get(code="5002")
+            if not comp.payroll_payment_account:
+                comp.payroll_payment_account = ChartOfAccount.objects.get(code="1001")
+            comp.save()
 
         self.stdout.write(self.style.SUCCESS("✅ Accounting initialization complete."))

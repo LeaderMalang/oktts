@@ -1,5 +1,6 @@
 from datetime import date
 
+
 from django.test import TestCase
 from django.conf import settings
 
@@ -95,3 +96,4 @@ class PurchaseBalanceTests(TestCase):
         )
         self.supplier.refresh_from_db()
         self.assertEqual(self.supplier.current_balance, 70)
+
