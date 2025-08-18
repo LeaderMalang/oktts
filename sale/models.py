@@ -80,7 +80,6 @@ class SaleInvoice(models.Model):
 
         is_new = self.pk is None
         super().save(*args, **kwargs)
-
         if is_new:
             for item in self.items.all():
                 stock_out(
@@ -88,6 +87,11 @@ class SaleInvoice(models.Model):
                     quantity=item.quantity + item.bonus,
                     reason=f"Sale Invoice {self.invoice_no}"
                 )
+
+            outstanding = self.grand_total - self.paid_amount
+            if outstanding:
+                self.customer.current_balance += outstanding
+                self.customer.save(update_fields=["current_balance"])
 
         if not self.voucher:
             if self.payment_method == "Cash":
@@ -147,6 +151,11 @@ class SaleReturn(models.Model):
                     reason=f"Sale Return {self.return_no}"
                 )
 
+            self.customer.current_balance -= self.total_amount
+            self.customer.save(update_fields=["current_balance"])
+        if not self.voucher:
+
+
 
             payment_method = (
                 self.invoice.payment_method if self.invoice else "Cash"
@@ -160,20 +169,21 @@ class SaleReturn(models.Model):
                     self.customer.save(update_fields=["current_balance"])
 
 
+
             voucher = create_voucher_for_transaction(
                 voucher_type_code='SRN',
                 date=self.date,
                 amount=self.total_amount,
                 narration=f"Auto-voucher for Sale Return {self.return_no}",
 
-                debit_account=self.warehouse.default_sales_account,
-                credit_account=credit_account,
-
+                debit_account=self.warehouse.default_sales_account,  # reverse sale
+                credit_account=self.customer.chart_of_account,  # reduce receivable
                 created_by=getattr(self, 'created_by', None),
-                branch=getattr(self, 'branch', None)
+                branch=getattr(self, 'branch', None),
             )
             self.voucher = voucher
-            super().save(update_fields=['voucher'])
+            self.save(update_fields=["voucher"])
+
 
 class SaleReturnItem(models.Model):
     return_invoice = models.ForeignKey(SaleReturn, related_name='items', on_delete=models.CASCADE)

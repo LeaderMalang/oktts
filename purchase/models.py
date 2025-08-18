@@ -46,6 +46,12 @@ class PurchaseInvoice(models.Model):
                 )
 
 
+            outstanding = self.grand_total - self.paid_amount
+            if outstanding:
+                self.supplier.current_balance += outstanding
+                self.supplier.save(update_fields=["current_balance"])
+
+
         if not self.voucher:
             if self.payment_method == "Cash":
                 credit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
@@ -103,6 +109,11 @@ class PurchaseReturn(models.Model):
                     reason=f"Purchase Return {self.return_no}"
                 )
 
+            self.supplier.current_balance -= self.total_amount
+            self.supplier.save(update_fields=["current_balance"])
+        if not self.voucher:
+    
+
 
             payment_method = (
                 self.invoice.payment_method if self.invoice else "Cash"
@@ -126,6 +137,7 @@ class PurchaseReturn(models.Model):
 
                 created_by=getattr(self, 'created_by', None),
                 branch=getattr(self, 'branch', None)
+
             )
             self.voucher = voucher
             super().save(update_fields=['voucher'])

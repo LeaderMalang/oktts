@@ -4,16 +4,27 @@ from decimal import Decimal
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+
+from django.conf import settings
+
 from django.test import TestCase, SimpleTestCase
 from unittest.mock import patch
+
 
 from inventory.models import Party, Product
 
 from setting.models import Branch, Warehouse, Company, Distributor, Group
 from voucher.models import AccountType, ChartOfAccount, VoucherType
 from hr.models import Employee
-from .models import SaleInvoice, SaleReturn, SaleReturnItem
-from inventory.models import Batch
+
+from .models import SaleInvoice, SaleReturn,SaleReturnItem
+
+
+settings.MIGRATION_MODULES = {
+    "sale": None,
+    "purchase": None,
+    "inventory": None,
+}
 
 
 User = get_user_model()
@@ -133,6 +144,26 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
 
 
 
+class SaleBalanceTests(APITestCase):
+    """Ensure party balances adjust for different sale transactions."""
+
+    def setUp(self):
+        asset = AccountType.objects.create(name="ASSET")
+        income = AccountType.objects.create(name="INCOME")
+        self.customer_account = ChartOfAccount.objects.create(
+            name="Customer", code="1100", account_type=asset
+        )
+        self.sales_account = ChartOfAccount.objects.create(
+            name="Sales", code="4100", account_type=income
+        )
+        self.branch = Branch.objects.create(name="Main", address="addr")
+        self.warehouse = Warehouse.objects.create(
+            name="W1", branch=self.branch, default_sales_account=self.sales_account
+        )
+        self.city = City.objects.create(name="Metropolis")
+        self.area = Area.objects.create(name="Center", city=self.city)
+
+
 class SaleReturnVoucherTest(APITestCase):
     def setUp(self):
         asset = AccountType.objects.create(name="ASSET")
@@ -183,12 +214,78 @@ class SaleReturnVoucherTest(APITestCase):
             warehouse=self.warehouse,
         )
 
+
         self.customer = Party.objects.create(
             name="Cust",
             address="addr",
             phone="123",
             party_type="customer",
             chart_of_account=self.customer_account,
+
+            city=self.city,
+            area=self.area,
+        )
+        VoucherType.objects.create(name="Sale", code="SAL")
+        VoucherType.objects.create(name="Sale Return", code="SRN")
+
+    def test_cash_sale_does_not_change_balance(self):
+        SaleInvoice.objects.create(
+            invoice_no="INV-100",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=100,
+            discount=0,
+            tax=0,
+            paid_amount=100,
+            net_amount=0,
+            payment_method="Cash",
+            status="Paid",
+        )
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.current_balance, 0)
+
+    def test_credit_sale_increases_balance(self):
+        SaleInvoice.objects.create(
+            invoice_no="INV-101",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=100,
+            discount=0,
+            tax=0,
+            paid_amount=0,
+            net_amount=0,
+            payment_method="Credit",
+            status="Pending",
+        )
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.current_balance, 100)
+
+    def test_sale_return_reduces_balance(self):
+        SaleInvoice.objects.create(
+            invoice_no="INV-102",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=100,
+            discount=0,
+            tax=0,
+            paid_amount=0,
+            net_amount=0,
+            payment_method="Credit",
+            status="Pending",
+        )
+        SaleReturn.objects.create(
+            return_no="SR-1",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=30,
+        )
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.current_balance, 70)
+
         )
 
     def _create_invoice(self, method):
@@ -275,4 +372,5 @@ class SaleReturnVoucherTest(APITestCase):
         self.assertEqual(credit.account, self.customer_account)
         self.customer.refresh_from_db()
         self.assertEqual(self.customer.current_balance, 30)
+
 
