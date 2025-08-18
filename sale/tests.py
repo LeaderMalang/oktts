@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -15,8 +16,9 @@ from setting.models import (
     Warehouse,
 )
 from voucher.models import AccountType, ChartOfAccount, VoucherType
+from voucher.test_utils import assert_ledger_entries
 from hr.models import Employee
-from .models import SaleInvoice
+from .models import SaleInvoice, SaleReturn
 
 User = get_user_model()
 
@@ -83,6 +85,32 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             status="Paid",
         )
         self.assertIsNotNone(invoice.voucher)
+        assert_ledger_entries(
+            self,
+            invoice.voucher,
+            [
+                (self.customer_account, Decimal("10"), Decimal("0")),
+                (self.sales_account, Decimal("0"), Decimal("10")),
+            ],
+        )
+
+    def test_sale_return_posts_correct_ledger(self):
+        return_invoice = SaleReturn.objects.create(
+            return_no="RET-1",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=5,
+        )
+        self.assertIsNotNone(return_invoice.voucher)
+        assert_ledger_entries(
+            self,
+            return_invoice.voucher,
+            [
+                (self.sales_account, Decimal("5"), Decimal("0")),
+                (self.customer_account, Decimal("0"), Decimal("5")),
+            ],
+        )
 
     def test_status_action_updates_status_and_delivery_man(self):
         invoice = SaleInvoice.objects.create(
