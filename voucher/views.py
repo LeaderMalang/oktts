@@ -27,7 +27,9 @@ def customer_ledger(request, party_id):
         return Response({"party": party.id, "ledger": []})
 
     entries = (
-        VoucherEntry.objects.filter(account=party.chart_of_account)
+        VoucherEntry.objects.filter(
+            account=party.chart_of_account, voucher__financial_year__is_active=True
+        )
         .select_related("voucher")
         .order_by("voucher__date", "id")
     )

@@ -1,5 +1,6 @@
 from django.db import models, transaction
 from user.models import CustomUser
+from finance.models import FinancialYear
 
 class AccountType(models.Model):
     ACCOUNT_TYPES = [
@@ -39,6 +40,16 @@ class VoucherType(models.Model):
     def __str__(self):
         return self.name
 
+class VoucherQuerySet(models.QuerySet):
+    def active_year(self):
+        return self.filter(financial_year=FinancialYear.get_active())
+
+
+class VoucherManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(financial_year=FinancialYear.get_active())
+
+
 class Voucher(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
@@ -53,6 +64,12 @@ class Voucher(models.Model):
     approved_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='vouchers_approved', blank=True)
     branch = models.ForeignKey('setting.Branch', on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    financial_year = models.ForeignKey(
+        FinancialYear, on_delete=models.PROTECT, related_name='vouchers', null=True
+    )
+
+    objects = VoucherManager()
+    all_objects = models.Manager()
 
     def __str__(self):
         return f"{self.voucher_type.code} - {self.date}"
@@ -67,6 +84,7 @@ class Voucher(models.Model):
         created_by,
         entries,
         branch=None,
+        financial_year=None,
     ):
         """Create a voucher with an arbitrary number of debit/credit lines.
 
@@ -79,6 +97,7 @@ class Voucher(models.Model):
         total_credit = sum(entry["credit"] for entry in entries)
         if total_debit != total_credit:
             raise ValueError("Debit and credit totals must match")
+        financial_year = financial_year or FinancialYear.get_active()
 
         with transaction.atomic():
             voucher = cls.objects.create(
@@ -88,6 +107,7 @@ class Voucher(models.Model):
                 narration=narration,
                 created_by=created_by,
                 branch=branch,
+                financial_year=financial_year,
             )
             for entry in entries:
                 VoucherEntry.objects.create(

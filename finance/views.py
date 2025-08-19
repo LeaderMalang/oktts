@@ -1,9 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import PaymentSchedule
-from .serializers import PaymentScheduleSerializer
+from .models import FinancialYear, PaymentSchedule
+from .serializers import FinancialYearSerializer, PaymentScheduleSerializer
 from utils.voucher import create_voucher_for_transaction
 
 
@@ -49,4 +49,25 @@ class PaymentScheduleViewSet(viewsets.ModelViewSet):
                 schedule.voucher = voucher
                 schedule.save(update_fields=["voucher"])
         serializer = self.get_serializer(schedule)
+        return Response(serializer.data)
+
+
+class FinancialYearViewSet(viewsets.ModelViewSet):
+    queryset = FinancialYear.objects.all()
+    serializer_class = FinancialYearSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=True, methods=["post"])
+    def activate(self, request, pk=None):
+        year = self.get_object()
+        year.activate()
+        serializer = self.get_serializer(year)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def close(self, request, pk=None):
+        year = self.get_object()
+        year.is_active = False
+        year.save(update_fields=["is_active"])
+        serializer = self.get_serializer(year)
         return Response(serializer.data)
