@@ -23,8 +23,6 @@ class SaleInvoice(models.Model):
     date = models.DateField()
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
-    salesman = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
-
     
     recoveries = models.ManyToManyField('hr.Employee', through='RecoveryLog', related_name='recovery_invoices', blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)

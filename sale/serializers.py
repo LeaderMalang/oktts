@@ -47,7 +47,6 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "date",
             "customer",
             "warehouse",
-            "salesman",
             "booking_man_id",
             "supplying_man_id",
             "delivery_man_id",

@@ -15,7 +15,6 @@ class SaleInvoiceForm(forms.ModelForm):
             'date',
             'customer',
             'warehouse',
-            'salesman',
 
             'total_amount',
             'discount',
