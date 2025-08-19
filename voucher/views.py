@@ -49,6 +49,39 @@ def customer_ledger(request, party_id):
     return Response({"party": party.id, "party_name": party.name, "ledger": ledger})
 
 
+@api_view(["GET"])
+def ledger(request, account_id):
+    """Return voucher history for any :class:`ChartOfAccount`.
+
+    Entries are ordered by voucher date and id with a running balance
+    calculated on the server.
+    """
+
+    account = get_object_or_404(ChartOfAccount, pk=account_id)
+
+    entries = (
+        VoucherEntry.objects.filter(account=account)
+        .select_related("voucher")
+        .order_by("voucher__date", "id")
+    )
+
+    balance = Decimal("0")
+    ledger_entries = []
+    for entry in entries:
+        balance += entry.debit - entry.credit
+        ledger_entries.append(
+            {
+                "date": entry.voucher.date,
+                "description": entry.voucher.narration or entry.remarks,
+                "debit": float(entry.debit),
+                "credit": float(entry.credit),
+                "balance": float(balance),
+            }
+        )
+
+    return Response({"account": account.id, "account_name": account.name, "ledger": ledger_entries})
+
+
 class ChartOfAccountViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ChartOfAccount.objects.all()
     serializer_class = ChartOfAccountSerializer

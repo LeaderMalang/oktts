@@ -1,3 +1,4 @@
+
 from datetime import date
 from decimal import Decimal
 
@@ -18,12 +19,14 @@ class JournalVoucherTests(APITestCase):
 
         asset = AccountType.objects.create(name="ASSET")
         income = AccountType.objects.create(name="INCOME")
+
         self.cash = ChartOfAccount.objects.create(
             name="Cash", code="CASH", account_type=asset
         )
         self.sales = ChartOfAccount.objects.create(
             name="Sales", code="SALES", account_type=income
         )
+
 
         VoucherType.objects.get_or_create(
             code=VoucherType.JOURNAL, defaults={"name": "Journal"}
@@ -80,4 +83,5 @@ class JournalVoucherTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
 
