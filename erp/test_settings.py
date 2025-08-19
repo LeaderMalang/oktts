@@ -10,6 +10,7 @@ MIGRATION_MODULES = {
     'hr': None,
     'expense': None,
     'report': None,
+    'finance': None,
     'user': None,
     'crm': None,
     'task': None,

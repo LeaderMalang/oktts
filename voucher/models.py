@@ -27,6 +27,17 @@ class ChartOfAccount(models.Model):
         return f"{self.code} - {self.name}"
 
 
+class FinancialYear(models.Model):
+    """Represents a range of dates for accounting purposes."""
+
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_closed = models.BooleanField(default=False)
+
+    def __str__(self):  # pragma: no cover - display helper
+        return f"{self.start_date} - {self.end_date}"
+
+
 class VoucherType(models.Model):
     """Lookup for categorising different kinds of vouchers."""
 
