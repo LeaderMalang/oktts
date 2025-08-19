@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from user.models import CustomUser
 
 class AccountType(models.Model):
@@ -27,13 +27,17 @@ class ChartOfAccount(models.Model):
 
 
 class VoucherType(models.Model):
+    """Lookup for categorising different kinds of vouchers."""
+
+    #: Marker used for general journal entries.
+    JOURNAL = "JV"
+
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
     description = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
-#dad
 
 class Voucher(models.Model):
     STATUS_CHOICES = [
@@ -52,6 +56,49 @@ class Voucher(models.Model):
 
     def __str__(self):
         return f"{self.voucher_type.code} - {self.date}"
+
+    @classmethod
+    def create_with_entries(
+        cls,
+        *,
+        voucher_type,
+        date,
+        narration,
+        created_by,
+        entries,
+        branch=None,
+    ):
+        """Create a voucher with an arbitrary number of debit/credit lines.
+
+        ``entries`` should be an iterable of dictionaries with keys:
+        ``account``, ``debit``, ``credit`` and optional ``remarks``. The
+        total debit and credit amounts must balance.
+        """
+
+        total_debit = sum(entry["debit"] for entry in entries)
+        total_credit = sum(entry["credit"] for entry in entries)
+        if total_debit != total_credit:
+            raise ValueError("Debit and credit totals must match")
+
+        with transaction.atomic():
+            voucher = cls.objects.create(
+                voucher_type=voucher_type,
+                date=date,
+                amount=total_debit,
+                narration=narration,
+                created_by=created_by,
+                branch=branch,
+            )
+            for entry in entries:
+                VoucherEntry.objects.create(
+                    voucher=voucher,
+                    account=entry["account"],
+                    debit=entry.get("debit", 0),
+                    credit=entry.get("credit", 0),
+                    remarks=entry.get("remarks", ""),
+                )
+
+        return voucher
 
 
 class VoucherEntry(models.Model):
