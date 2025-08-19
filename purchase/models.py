@@ -1,11 +1,12 @@
 from django.db import models
 from inventory.models import Product, Party
 from setting.models import Warehouse
-from voucher.models import Voucher, ChartOfAccount
+from voucher.models import Voucher, ChartOfAccount, VoucherType
 from utils.stock import stock_in, stock_return, stock_out
 from utils.voucher import create_voucher_for_transaction
 from finance.models import PaymentTerm, PaymentSchedule
 from datetime import timedelta
+from setting.constants import TAX_RECEIVABLE_ACCOUNT_CODE
 
 
 class PurchaseInvoice(models.Model):
@@ -73,16 +74,37 @@ class PurchaseInvoice(models.Model):
             else:
                 credit_account = self.supplier.chart_of_account
 
-            voucher = create_voucher_for_transaction(
-                voucher_type_code="PUR",
-                date=self.date,
-                amount=self.grand_total,
-                narration=f"Auto-voucher for Purchase Invoice {self.invoice_no}",
-                debit_account=self.warehouse.default_purchase_account,
-                credit_account=credit_account,
-                created_by=self.created_by if hasattr(self, "created_by") else None,
-                branch=self.branch if hasattr(self, "branch") else None,
-            )
+            if self.tax and self.tax > 0:
+                voucher_type = VoucherType.objects.get(code="PUR")
+                tax_account = ChartOfAccount.objects.get(code=TAX_RECEIVABLE_ACCOUNT_CODE)
+                entries = [
+                    {
+                        "account": self.warehouse.default_purchase_account,
+                        "debit": self.grand_total - self.tax,
+                        "credit": 0,
+                    },
+                    {"account": tax_account, "debit": self.tax, "credit": 0},
+                    {"account": credit_account, "debit": 0, "credit": self.grand_total},
+                ]
+                voucher = Voucher.create_with_entries(
+                    voucher_type=voucher_type,
+                    date=self.date,
+                    narration=f"Auto-voucher for Purchase Invoice {self.invoice_no}",
+                    created_by=getattr(self, "created_by", None),
+                    entries=entries,
+                    branch=getattr(self, "branch", None),
+                )
+            else:
+                voucher = create_voucher_for_transaction(
+                    voucher_type_code="PUR",
+                    date=self.date,
+                    amount=self.grand_total,
+                    narration=f"Auto-voucher for Purchase Invoice {self.invoice_no}",
+                    debit_account=self.warehouse.default_purchase_account,
+                    credit_account=credit_account,
+                    created_by=self.created_by if hasattr(self, "created_by") else None,
+                    branch=self.branch if hasattr(self, "branch") else None,
+                )
             self.voucher = voucher
             super().save(update_fields=["voucher"])
 
