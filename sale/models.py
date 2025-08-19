@@ -37,13 +37,13 @@ class SaleInvoice(models.Model):
         blank=True,
         related_name='bookings',
     )
-    supplying_man_id = models.ForeignKey(
-        'hr.Employee',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='supplies',
-    )
+    # supplying_man_id = models.ForeignKey(
+    #     'hr.Employee',
+    #     on_delete=models.SET_NULL,
+    #     null=True,
+    #     blank=True,
+    #     related_name='supplies',
+    # )
     delivery_man_id = models.ForeignKey(
         'hr.Employee',
         on_delete=models.SET_NULL,

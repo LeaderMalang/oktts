@@ -50,7 +50,7 @@ print_invoice_pdf.short_description = "Print Invoice PDF"
 class SaleInvoiceAdmin(admin.ModelAdmin):
 
     list_display = ['invoice_no', 'date', 'customer', 'warehouse', 'sub_total', 'tax', 'total_amount', 'net_amount']
-    list_filter = ['date', 'warehouse','booking_man_id', 'supplying_man_id', 'delivery_man_id', 'city_id', 'area_id']
+    list_filter = ['date', 'warehouse','booking_man_id', 'delivery_man_id', 'city_id', 'area_id']
 
     search_fields = ['invoice_no', 'customer__name']
     inlines = [SaleInvoiceItemInline]
@@ -86,7 +86,6 @@ class SaleInvoiceAdmin(admin.ModelAdmin):
             .select_related(
                 'customer',
                 'booking_man_id',
-                'supplying_man_id',
                 'delivery_man_id',
                 'city_id',
                 'area_id',
