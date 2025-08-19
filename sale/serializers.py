@@ -7,6 +7,7 @@ from .models import (
     SaleReturnItem,
     RecoveryLog,
 )
+from finance.serializers import PaymentScheduleSerializer
 
 
 class SaleInvoiceItemSerializer(serializers.ModelSerializer):
@@ -37,6 +38,7 @@ class RecoveryLogSerializer(serializers.ModelSerializer):
 class SaleInvoiceSerializer(serializers.ModelSerializer):
     items = SaleInvoiceItemSerializer(many=True)
     recovery_logs = RecoveryLogSerializer(many=True, read_only=True)
+    payment_schedules = PaymentScheduleSerializer(many=True, read_only=True)
 
     class Meta:
         model = SaleInvoice
@@ -58,10 +60,12 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "grand_total",
             "net_amount",
             "payment_method",
+            "payment_term",
             "status",
             "qr_code",
             "items",
             "recovery_logs",
+            "payment_schedules",
             "address",
             "total_amount",
         ]

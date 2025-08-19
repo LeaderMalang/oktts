@@ -30,6 +30,7 @@ urlpatterns = [
     path('sales/', include('sale.urls')),  # 👈 Add this line
 
     path('purchase/', include('purchase.urls')),
+    path('finance/', include('finance.urls')),
 
 
 

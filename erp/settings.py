@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'voucher',
     'sale',
     'purchase',
+    'finance',
     'expense',
     'report',
     'user',

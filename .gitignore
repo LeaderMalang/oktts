@@ -20,6 +20,9 @@ __pycache__/
 !investor/migrations
 !syncqueue/migrations
 !user/migrations
+!purchase/migrations
+!sale/migrations
+!finance/migrations
 **/__pycache__/
 /static/
 
