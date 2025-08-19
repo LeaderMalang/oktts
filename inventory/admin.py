@@ -25,6 +25,7 @@ class PartyAdmin(admin.ModelAdmin):
         'longitude',
         'price_list',
         "business_image",
+        "current_balance"
     )
     search_fields = ('name', 'phone', 'category')
     list_filter = ('party_type',)

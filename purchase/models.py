@@ -7,6 +7,7 @@ from utils.voucher import create_voucher_for_transaction
 
 
 class PurchaseInvoice(models.Model):
+    STATUS_CHOICES = (("Pending", "Pending"), ("Paid", "Paid"), ("Cancelled", "Cancelled"))
     invoice_no = models.CharField(max_length=50, unique=True)
     company_invoice_number = models.CharField(max_length=50, null=True, blank=True)
     date = models.DateField()
@@ -26,7 +27,7 @@ class PurchaseInvoice(models.Model):
         default="Cash",
     )
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    status = models.CharField(max_length=20, default="Pending")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     def save(self, *args, **kwargs):
@@ -85,7 +86,7 @@ class PurchaseInvoiceItem(models.Model):
     sale_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    # net_amount = models.DecimalField(max_digits=12, decimal_places=2)
 
 class PurchaseReturn(models.Model):
     PAYMENT_CHOICES = (("Cash", "Cash"), ("Credit", "Credit"))
