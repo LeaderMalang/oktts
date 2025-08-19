@@ -6,6 +6,7 @@ from .models import (
     PurchaseReturnItem,
     InvestorTransaction,
 )
+from finance.serializers import PaymentScheduleSerializer
 
 
 class PurchaseInvoiceItemSerializer(serializers.ModelSerializer):
@@ -16,6 +17,7 @@ class PurchaseInvoiceItemSerializer(serializers.ModelSerializer):
 
 class PurchaseInvoiceSerializer(serializers.ModelSerializer):
     items = PurchaseInvoiceItemSerializer(many=True, read_only=True)
+    payment_schedules = PaymentScheduleSerializer(many=True, read_only=True)
 
     class Meta:
         model = PurchaseInvoice

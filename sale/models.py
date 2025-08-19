@@ -10,6 +10,8 @@ import logging
 from voucher.models import Voucher, ChartOfAccount
 from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
+from finance.models import PaymentTerm, PaymentSchedule
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +65,7 @@ class SaleInvoice(models.Model):
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
 
 
@@ -90,6 +93,17 @@ class SaleInvoice(models.Model):
             if outstanding:
                 self.customer.current_balance += outstanding
                 self.customer.save(update_fields=["current_balance"])
+
+            if self.payment_term:
+                installment_amount = self.grand_total / (self.payment_term.installments or 1)
+                for i in range(self.payment_term.installments):
+                    due_date = self.date + timedelta(days=self.payment_term.interval_days * (i + 1))
+                    PaymentSchedule.objects.create(
+                        term=self.payment_term,
+                        sale_invoice=self,
+                        due_date=due_date,
+                        amount=installment_amount,
+                    )
 
         if not self.voucher:
             if self.payment_method == "Cash":

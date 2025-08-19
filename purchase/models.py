@@ -4,6 +4,8 @@ from setting.models import Warehouse
 from voucher.models import Voucher, ChartOfAccount
 from utils.stock import stock_in, stock_return, stock_out
 from utils.voucher import create_voucher_for_transaction
+from finance.models import PaymentTerm, PaymentSchedule
+from datetime import timedelta
 
 
 class PurchaseInvoice(models.Model):
@@ -26,6 +28,7 @@ class PurchaseInvoice(models.Model):
         choices=(("Cash", "Cash"), ("Credit", "Credit")),
         default="Cash",
     )
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.SET_NULL, null=True, blank=True)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
@@ -51,6 +54,17 @@ class PurchaseInvoice(models.Model):
             if outstanding:
                 self.supplier.current_balance += outstanding
                 self.supplier.save(update_fields=["current_balance"])
+
+            if self.payment_term:
+                installment_amount = self.grand_total / (self.payment_term.installments or 1)
+                for i in range(self.payment_term.installments):
+                    due_date = self.date + timedelta(days=self.payment_term.interval_days * (i + 1))
+                    PaymentSchedule.objects.create(
+                        term=self.payment_term,
+                        purchase_invoice=self,
+                        due_date=due_date,
+                        amount=installment_amount,
+                    )
 
 
         if not self.voucher:
