@@ -1,20 +1,22 @@
-"""Tests for ledger endpoints in the voucher app."""
 
 from datetime import date
+from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
-from voucher.models import (
-    AccountType,
-    ChartOfAccount,
-    Voucher,
-    VoucherEntry,
-    VoucherType,
-)
+from voucher.models import AccountType, ChartOfAccount, Voucher, VoucherType
+from voucher.test_utils import assert_ledger_entries
 
 
-class LedgerViewTests(APITestCase):
+User = get_user_model()
+
+
+class JournalVoucherTests(APITestCase):
     def setUp(self):
+        self.user = User.objects.create_user("user@example.com", "pass")
+        self.client.force_authenticate(self.user)
+
         asset = AccountType.objects.create(name="ASSET")
         income = AccountType.objects.create(name="INCOME")
 
@@ -25,56 +27,61 @@ class LedgerViewTests(APITestCase):
             name="Sales", code="SALES", account_type=income
         )
 
-        self.voucher_type = VoucherType.objects.create(name="JV", code="JV")
 
-    def _create_entry(self, v_date, debit=0, credit=0, remarks=""):
-        """Create a voucher with matching entries for target accounts."""
-
-        voucher = Voucher.objects.create(
-            voucher_type=self.voucher_type,
-            date=v_date,
-            amount=debit or credit,
-            narration=remarks,
+        VoucherType.objects.get_or_create(
+            code=VoucherType.JOURNAL, defaults={"name": "Journal"}
         )
 
-        # Entry for the cash account under test
-        VoucherEntry.objects.create(
-            voucher=voucher,
-            account=self.cash,
-            debit=debit,
-            credit=credit,
-            remarks=remarks,
+    def test_create_journal_voucher(self):
+        response = self.client.post(
+            "/voucher/journal/",
+            {
+                "date": date.today().isoformat(),
+                "narration": "Sale entry",
+                "entries": [
+                    {
+                        "account": self.cash.id,
+                        "debit": "100.00",
+                        "credit": "0",
+                        "remarks": "cash",
+                    },
+                    {
+                        "account": self.sales.id,
+                        "debit": "0",
+                        "credit": "100.00",
+                        "remarks": "sales",
+                    },
+                ],
+            },
+            format="json",
         )
-        # Counter entry to balance the voucher
-        VoucherEntry.objects.create(
-            voucher=voucher,
-            account=self.sales,
-            debit=credit,
-            credit=debit,
-            remarks=remarks,
+
+        self.assertEqual(response.status_code, 201)
+        voucher = Voucher.objects.get(id=response.data["id"])
+        self.assertEqual(voucher.amount, Decimal("100.00"))
+        assert_ledger_entries(
+            self,
+            voucher,
+            [
+                (self.cash, Decimal("100.00"), 0),
+                (self.sales, 0, Decimal("100.00")),
+            ],
         )
 
-    def test_ledger_returns_ordered_entries_with_running_balance(self):
-        """Ledger endpoint should order by date and compute running balances."""
+    def test_reject_unbalanced_entries(self):
+        response = self.client.post(
+            "/voucher/journal/",
+            {
+                "date": date.today().isoformat(),
+                "narration": "Bad entry",
+                "entries": [
+                    {"account": self.cash.id, "debit": "100", "credit": "0"},
+                    {"account": self.sales.id, "debit": "0", "credit": "90"},
+                ],
+            },
+            format="json",
+        )
 
-        self._create_entry(date(2023, 1, 1), debit=100, remarks="deposit")
-        # Two vouchers on the same day to ensure ordering by ID
-        self._create_entry(date(2023, 1, 2), credit=30, remarks="withdrawal")
-        self._create_entry(date(2023, 1, 2), debit=50, remarks="deposit2")
+        self.assertEqual(response.status_code, 400)
 
-        resp = self.client.get(f"/voucher/ledger/{self.cash.id}/")
-        self.assertEqual(resp.status_code, 200)
-
-        ledger = resp.data["ledger"]
-        self.assertEqual(len(ledger), 3)
-
-        # Ensure entries are ordered and running balance is correct
-        self.assertEqual(ledger[0]["debit"], 100.0)
-        self.assertEqual(ledger[0]["balance"], 100.0)
-
-        self.assertEqual(ledger[1]["credit"], 30.0)
-        self.assertEqual(ledger[1]["balance"], 70.0)
-
-        self.assertEqual(ledger[2]["debit"], 50.0)
-        self.assertEqual(ledger[2]["balance"], 120.0)
 

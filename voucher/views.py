@@ -3,13 +3,13 @@
 from decimal import Decimal
 
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, viewsets
+from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from inventory.models import Party
 from .models import VoucherEntry, ChartOfAccount
-from .serializers import ChartOfAccountSerializer
+from .serializers import ChartOfAccountSerializer, JournalVoucherSerializer
 
 
 @api_view(["GET"])
@@ -85,4 +85,9 @@ def ledger(request, account_id):
 class ChartOfAccountViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ChartOfAccount.objects.all()
     serializer_class = ChartOfAccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class JournalVoucherCreateAPIView(generics.CreateAPIView):
+    serializer_class = JournalVoucherSerializer
     permission_classes = [permissions.IsAuthenticated]
