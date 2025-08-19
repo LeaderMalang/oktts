@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from voucher.models import AccountType, ChartOfAccount, Voucher, VoucherType
+from finance.models import FinancialYear
 from voucher.test_utils import assert_ledger_entries
 
 
@@ -27,6 +28,9 @@ class JournalVoucherTests(APITestCase):
 
         VoucherType.objects.get_or_create(
             code=VoucherType.JOURNAL, defaults={"name": "Journal"}
+        )
+        self.year = FinancialYear.objects.create(
+            name="FY24", start_date=date(2024, 1, 1), end_date=date(2024, 12, 31), is_active=True
         )
 
     def test_create_journal_voucher(self):
@@ -54,8 +58,9 @@ class JournalVoucherTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        voucher = Voucher.objects.get(id=response.data["id"])
+        voucher = Voucher.all_objects.get(id=response.data["id"])
         self.assertEqual(voucher.amount, Decimal("100.00"))
+        self.assertEqual(voucher.financial_year, self.year)
         assert_ledger_entries(
             self,
             voucher,
@@ -80,4 +85,24 @@ class JournalVoucherTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_voucher_uses_active_year(self):
+        FinancialYear.objects.create(
+            name="Other", start_date=date(2023, 1, 1), end_date=date(2023, 12, 31), is_active=False
+        )
+        response = self.client.post(
+            "/voucher/journal/",
+            {
+                "date": date.today().isoformat(),
+                "narration": "Sale entry",
+                "entries": [
+                    {"account": self.cash.id, "debit": "50", "credit": "0"},
+                    {"account": self.sales.id, "debit": "0", "credit": "50"},
+                ],
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        voucher = Voucher.all_objects.get(id=response.data["id"])
+        self.assertEqual(voucher.financial_year, self.year)
 

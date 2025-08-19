@@ -1,11 +1,17 @@
 from rest_framework import serializers
 
-from .models import PaymentSchedule, PaymentTerm
+from .models import FinancialYear, PaymentSchedule, PaymentTerm
 
 
 class PaymentTermSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentTerm
+        fields = '__all__'
+
+
+class FinancialYearSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FinancialYear
         fields = '__all__'
 
 

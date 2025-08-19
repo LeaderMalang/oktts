@@ -1,5 +1,37 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from django.db import models
+
+
+class FinancialYear(models.Model):
+    """Represents an accounting year and tracks which year is active."""
+
+    name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_active = models.BooleanField(default=False)
+
+    @classmethod
+    def get_active(cls):
+        """Return the active year, creating a default one if none exists."""
+        year = cls.objects.filter(is_active=True).first()
+        if year:
+            return year
+        today = date.today()
+        return cls.objects.create(
+            name=str(today.year),
+            start_date=date(today.year, 1, 1),
+            end_date=date(today.year, 12, 31),
+            is_active=True,
+        )
+
+    def activate(self):
+        """Activate this financial year and deactivate others."""
+        type(self).objects.update(is_active=False)
+        self.is_active = True
+        self.save(update_fields=["is_active"])
+
+    def __str__(self):  # pragma: no cover - display helper
+        return self.name
 
 
 class PaymentTerm(models.Model):
@@ -46,3 +78,4 @@ class PaymentSchedule(models.Model):
     def __str__(self):  # pragma: no cover - display helper
         invoice = self.purchase_invoice or self.sale_invoice
         return f"Schedule for {invoice} due {self.due_date}" if invoice else "Schedule"
+
