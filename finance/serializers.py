@@ -10,6 +10,21 @@ class PaymentTermSerializer(serializers.ModelSerializer):
 
 
 class PaymentScheduleSerializer(serializers.ModelSerializer):
+    voucher = serializers.SerializerMethodField(read_only=True)
+
+    def get_voucher(self, obj):
+        if obj.voucher:
+            return {
+                "id": obj.voucher.id,
+                "voucher_type": obj.voucher.voucher_type.code,
+                "date": obj.voucher.date,
+                "amount": obj.voucher.amount,
+                "narration": obj.voucher.narration,
+                "status": obj.voucher.status,
+            }
+        return None
+
     class Meta:
         model = PaymentSchedule
         fields = '__all__'
+        read_only_fields = ('voucher',)
