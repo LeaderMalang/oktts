@@ -13,10 +13,11 @@ from unittest.mock import patch
 
 from inventory.models import Party, Product
 
-from setting.models import Branch, Warehouse, Company, Distributor, Group
+from setting.models import Branch, Warehouse, Company, Distributor, Group, City, Area
 from voucher.models import AccountType, ChartOfAccount, VoucherType
 from voucher.test_utils import assert_ledger_entries
 from hr.models import Employee
+from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
 
 from utils.stock import stock_in, stock_out
 from .models import SaleInvoice,SaleReturn,SaleReturnItem
@@ -95,6 +96,7 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
 
         asset = AccountType.objects.create(name="ASSET")
         income = AccountType.objects.create(name="INCOME")
+        liability = AccountType.objects.create(name="LIABILITY")
         self.customer_account = ChartOfAccount.objects.create(
             name="Customer", code="1000", account_type=asset
         )
@@ -103,6 +105,9 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
         )
         self.sales_account = ChartOfAccount.objects.create(
             name="Sales", code="4000", account_type=income
+        )
+        self.tax_payable_account = ChartOfAccount.objects.create(
+            name="Tax Payable", code=TAX_PAYABLE_ACCOUNT_CODE, account_type=liability
         )
         self.branch = Branch.objects.create(name="Main", address="addr")
         self.warehouse = Warehouse.objects.create(
@@ -159,6 +164,32 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             [
                 (self.customer_account, Decimal("10"), Decimal("0")),
                 (self.sales_account, Decimal("0"), Decimal("10")),
+            ],
+        )
+
+    def test_cash_invoice_with_tax_posts_tax_payable(self):
+        invoice = SaleInvoice.objects.create(
+            invoice_no="INV-TAX-1",
+            date=date.today(),
+            customer=self.customer,
+            warehouse=self.warehouse,
+            total_amount=100,
+            sub_total=100,
+            discount=0,
+            tax=10,
+            paid_amount=110,
+            payment_method="Cash",
+            status="Paid",
+        )
+
+        self.assertIsNotNone(invoice.voucher)
+        assert_ledger_entries(
+            self,
+            invoice.voucher,
+            [
+                (self.cash_account, Decimal("110"), Decimal("0")),
+                (self.sales_account, Decimal("0"), Decimal("100")),
+                (self.tax_payable_account, Decimal("0"), Decimal("10")),
             ],
         )
 
@@ -410,8 +441,6 @@ class SaleReturnVoucherTest(APITestCase):
         )
         self.customer.refresh_from_db()
         self.assertEqual(self.customer.current_balance, 70)
-
-        )
 
     def _create_invoice(self, method):
         return SaleInvoice.objects.create(

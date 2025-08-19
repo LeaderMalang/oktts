@@ -1,4 +1,5 @@
 from voucher.models import Voucher, VoucherEntry, VoucherType
+from finance.models import FinancialYear
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -13,7 +14,8 @@ def create_voucher_for_transaction(
     debit_account,
     credit_account,
     created_by=None,
-    branch=None
+    branch=None,
+    financial_year=None,
 ):
     """
     Creates a voucher and two entries (debit & credit) for double-entry accounting.
@@ -32,6 +34,7 @@ def create_voucher_for_transaction(
     """
 
     voucher_type = VoucherType.objects.get(code=voucher_type_code)
+    financial_year = financial_year or FinancialYear.get_active()
 
     voucher = Voucher.objects.create(
         voucher_type=voucher_type,
@@ -40,7 +43,8 @@ def create_voucher_for_transaction(
         narration=narration,
         created_by=created_by or User.objects.first(),
         branch=branch,
-        status='PENDING'
+        status='PENDING',
+        financial_year=financial_year,
     )
 
     VoucherEntry.objects.create(
