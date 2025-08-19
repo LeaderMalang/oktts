@@ -7,11 +7,12 @@ from inventory.models import Party, Product, Batch
 
 import logging
 
-from voucher.models import Voucher, ChartOfAccount
+from voucher.models import Voucher, ChartOfAccount, VoucherType
 from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
 from finance.models import PaymentTerm, PaymentSchedule
 from datetime import timedelta
+from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -110,16 +111,38 @@ class SaleInvoice(models.Model):
                 debit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
             else:
                 debit_account = self.customer.chart_of_account
-            voucher = create_voucher_for_transaction(
-                voucher_type_code='SAL',
-                date=self.date,
-                amount=self.grand_total,
-                narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
-                debit_account=debit_account,
-                credit_account=self.warehouse.default_sales_account,
-                created_by=getattr(self, 'created_by', None),
-                branch=getattr(self, 'branch', None)
-            )
+
+            if self.tax and self.tax > 0:
+                voucher_type = VoucherType.objects.get(code="SAL")
+                tax_account = ChartOfAccount.objects.get(code=TAX_PAYABLE_ACCOUNT_CODE)
+                entries = [
+                    {"account": debit_account, "debit": self.grand_total, "credit": 0},
+                    {
+                        "account": self.warehouse.default_sales_account,
+                        "debit": 0,
+                        "credit": self.grand_total - self.tax,
+                    },
+                    {"account": tax_account, "debit": 0, "credit": self.tax},
+                ]
+                voucher = Voucher.create_with_entries(
+                    voucher_type=voucher_type,
+                    date=self.date,
+                    narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
+                    created_by=getattr(self, "created_by", None),
+                    entries=entries,
+                    branch=getattr(self, "branch", None),
+                )
+            else:
+                voucher = create_voucher_for_transaction(
+                    voucher_type_code='SAL',
+                    date=self.date,
+                    amount=self.grand_total,
+                    narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
+                    debit_account=debit_account,
+                    credit_account=self.warehouse.default_sales_account,
+                    created_by=getattr(self, 'created_by', None),
+                    branch=getattr(self, 'branch', None)
+                )
             self.voucher = voucher
             super().save(update_fields=['voucher'])
             logger.info("Linked voucher %s to sale invoice %s", voucher.pk, self.pk)

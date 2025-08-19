@@ -14,6 +14,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django.conf import settings
 from voucher.test_utils import assert_ledger_entries
+from setting.constants import TAX_RECEIVABLE_ACCOUNT_CODE
 
 
 
@@ -78,9 +79,18 @@ class PurchaseInvoiceTests(APITestCase):
         self.user = User.objects.create_user("user@example.com", "pass")
 
     def test_voucher_created_on_save(self):
-        invoice = PurchaseInvoice.objects.create(
+        PurchaseInvoice.objects.create(
             invoice_no="PINV-001",
-
+            date=date.today(),
+            supplier=self.supplier,
+            warehouse=self.warehouse,
+            total_amount=10,
+            discount=0,
+            tax=0,
+            grand_total=10,
+            payment_method="Cash",
+            paid_amount=10,
+        )
 
 
 class PurchaseBalanceTests(TestCase):
@@ -160,11 +170,6 @@ class PurchaseBalanceTests(TestCase):
                 reason="dup",
             )
 
-            status="Paid",
-        )
-        self.supplier.refresh_from_db()
-        self.assertEqual(self.supplier.current_balance, 0)
-
     def test_credit_purchase_increases_balance(self):
         PurchaseInvoice.objects.create(
             invoice_no="PI-101",
@@ -220,6 +225,9 @@ class PurchaseVoucherTests(TestCase):
         self.supplier_account = ChartOfAccount.objects.create(
             name="Supplier", code="2100", account_type=liability
         )
+        self.tax_receivable_account = ChartOfAccount.objects.create(
+            name="Tax Receivable", code=TAX_RECEIVABLE_ACCOUNT_CODE, account_type=asset
+        )
         self.branch = Branch.objects.create(name="Main", address="addr")
         self.warehouse = Warehouse.objects.create(
             name="W1", branch=self.branch, default_purchase_account=self.inventory_account
@@ -257,6 +265,31 @@ class PurchaseVoucherTests(TestCase):
             [
                 (self.inventory_account, Decimal("100"), Decimal("0")),
                 (self.supplier_account, Decimal("0"), Decimal("100")),
+            ],
+        )
+
+    def test_purchase_invoice_with_tax_posts_tax_receivable(self):
+        invoice = PurchaseInvoice.objects.create(
+            invoice_no="PINV-TAX-1",
+            date=date.today(),
+            supplier=self.supplier,
+            warehouse=self.warehouse,
+            total_amount=100,
+            discount=0,
+            tax=10,
+            grand_total=110,
+            payment_method="Credit",
+            paid_amount=0,
+            status="Pending",
+        )
+        self.assertIsNotNone(invoice.voucher)
+        assert_ledger_entries(
+            self,
+            invoice.voucher,
+            [
+                (self.inventory_account, Decimal("100"), Decimal("0")),
+                (self.tax_receivable_account, Decimal("10"), Decimal("0")),
+                (self.supplier_account, Decimal("0"), Decimal("110")),
             ],
         )
 
