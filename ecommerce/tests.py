@@ -172,5 +172,38 @@ class OrderAPITestCase(APITestCase):
         list_url = f"/ecommerce/orders/customer/{self.customer.id}/"
         resp = self.client.get(list_url)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 1)
-        self.assertEqual(resp.data[0]["customer"], self.customer.id)
+
+        self.assertEqual(resp.data["count"], 1)
+        self.assertEqual(len(resp.data["results"]), 1)
+        self.assertEqual(resp.data["results"][0]["customer"], self.customer.id)
+
+    def test_list_orders_by_customer_with_pagination(self):
+        order_url = "/ecommerce/orders/"
+
+        # create 3 orders for the same customer
+        for idx in range(3):
+            data = {
+                "order_no": f"ORD-P{idx}",
+                "date": date.today(),
+                "customer": self.customer.id,
+                "status": "Pending",
+                "total_amount": "10.00",
+                "items": [
+                    {
+                        "product": self.product.id,
+                        "quantity": 1,
+                        "price": "10.00",
+                        "amount": "10.00",
+                    }
+                ],
+            }
+            self.client.post(order_url, data, format="json")
+
+        list_url = f"/ecommerce/orders/customer/{self.customer.id}/?limit=2&offset=1"
+        resp = self.client.get(list_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 3)
+        self.assertEqual(len(resp.data["results"]), 2)
+        # ensure the first item corresponds to the second created order
+        self.assertEqual(resp.data["results"][0]["order_no"], "ORD-P1")
+
