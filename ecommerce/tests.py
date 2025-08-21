@@ -176,6 +176,10 @@ class OrderAPITestCase(APITestCase):
         self.assertEqual(resp.data["count"], 1)
         self.assertEqual(len(resp.data["results"]), 1)
         self.assertEqual(resp.data["results"][0]["customer"], self.customer.id)
+        item = resp.data["results"][0]["items"][0]
+        self.assertEqual(item["product"]["id"], self.product.id)
+        self.assertEqual(item["product"]["name"], self.product.name)
+
 
     def test_list_orders_by_customer_with_pagination(self):
         order_url = "/ecommerce/orders/"

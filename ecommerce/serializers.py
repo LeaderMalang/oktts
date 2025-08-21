@@ -1,9 +1,18 @@
 from rest_framework import serializers
 
 from .models import Order, OrderItem
+from inventory.models import Product
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ["id", "name"]
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+
     class Meta:
         model = OrderItem
         fields = [
@@ -13,6 +22,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "price",
             "amount",
         ]
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["product"] = ProductSerializer(instance.product).data
+        return rep
 
 
 class OrderSerializer(serializers.ModelSerializer):
