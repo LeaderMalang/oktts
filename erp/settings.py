@@ -26,10 +26,11 @@ SECRET_KEY = 'django-insecure-r3gb32-73qed2#%xux*zc)a)kj2smtnx1d6&t-h%g=!yawq3jj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 ENV= 'live'  # Set to 'production' in production environment
-ALLOWED_HOSTS = ["207.180.252.117", "localhost"]
+ALLOWED_HOSTS = ["207.180.252.117", "localhost","127.0.0.1"]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Add your frontend URL here
-    "http://localhost:5174",
+    "https://app.okdtts.com/",
+
 ]
 AUTH_USER_MODEL = "user.CustomUser"
 
