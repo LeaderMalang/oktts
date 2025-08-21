@@ -35,8 +35,7 @@ services:
     volumes:
       - static_volume:/static
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certs/server.crt:/etc/ssl/certs/server.crt:ro
-      - ./certs/server.key:/etc/ssl/private/server.key:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
 volumes:
   db_data:
