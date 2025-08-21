@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'inventory',
     'voucher',
     'sale',
+    'ecommerce',
     'purchase',
     'finance',
     'expense',

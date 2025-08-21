@@ -23,6 +23,7 @@ __pycache__/
 !purchase/migrations
 !sale/migrations
 !finance/migrations
+!ecommerce/migrations
 **/__pycache__/
 /static/
 
