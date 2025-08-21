@@ -120,3 +120,57 @@ class OrderAPITestCase(APITestCase):
         self.assertEqual(SaleInvoiceItem.objects.count(), 1)
         item = SaleInvoiceItem.objects.first()
         self.assertEqual(item.amount, order.items.first().amount)
+
+    def test_list_orders_by_customer(self):
+        order_url = "/ecommerce/orders/"
+        order_data = {
+            "order_no": "ORD-003",
+            "date": date.today(),
+            "customer": self.customer.id,
+            "status": "Pending",
+            "total_amount": "10.00",
+            "items": [
+                {
+                    "product": self.product.id,
+                    "quantity": 1,
+                    "price": "10.00",
+                    "amount": "10.00",
+                }
+            ],
+        }
+        self.client.post(order_url, order_data, format="json")
+
+        other_account = ChartOfAccount.objects.create(
+            name="Customer2", code="1001", account_type=self.customer_account.account_type
+        )
+        other_customer = Party.objects.create(
+            name="Cust2",
+            address="addr",
+            phone="456",
+            party_type="customer",
+            city=self.customer.city,
+            area=self.customer.area,
+            chart_of_account=other_account,
+        )
+        other_data = {
+            "order_no": "ORD-004",
+            "date": date.today(),
+            "customer": other_customer.id,
+            "status": "Pending",
+            "total_amount": "10.00",
+            "items": [
+                {
+                    "product": self.product.id,
+                    "quantity": 1,
+                    "price": "10.00",
+                    "amount": "10.00",
+                }
+            ],
+        }
+        self.client.post(order_url, other_data, format="json")
+
+        list_url = f"/ecommerce/orders/customer/{self.customer.id}/"
+        resp = self.client.get(list_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 1)
+        self.assertEqual(resp.data[0]["customer"], self.customer.id)
