@@ -58,3 +58,8 @@ urlpatterns = [
     path('spectacular/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('spectacular/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+
+admin.site.site_header = "Okay Distribution"
+admin.site.index_title = "Okay Distribution"
+admin.site.site_title = "Okay Distribution"
