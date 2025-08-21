@@ -29,6 +29,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('sales/', include('sale.urls')),  # 👈 Add this line
 
+    path('ecommerce/', include('ecommerce.urls')),
     path('purchase/', include('purchase.urls')),
     path('finance/', include('finance.urls')),
 

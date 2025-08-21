@@ -18,4 +18,5 @@ MIGRATION_MODULES = {
     'pricing': None,
     'investor': None,
     'syncqueue': None,
+    'ecommerce': None,
 }
