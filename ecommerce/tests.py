@@ -172,6 +172,7 @@ class OrderAPITestCase(APITestCase):
         list_url = f"/ecommerce/orders/customer/{self.customer.id}/"
         resp = self.client.get(list_url)
         self.assertEqual(resp.status_code, 200)
+
         self.assertEqual(resp.data["count"], 1)
         self.assertEqual(len(resp.data["results"]), 1)
         self.assertEqual(resp.data["results"][0]["customer"], self.customer.id)
@@ -205,3 +206,4 @@ class OrderAPITestCase(APITestCase):
         self.assertEqual(len(resp.data["results"]), 2)
         # ensure the first item corresponds to the second created order
         self.assertEqual(resp.data["results"][0]["order_no"], "ORD-P1")
+
