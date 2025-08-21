@@ -1,6 +1,6 @@
 from django.db import models, transaction
 
-from inventory.models import Party, Product
+from inventory.models import Party, Product, Batch
 from sale.models import SaleInvoice, SaleInvoiceItem
 
 
@@ -32,9 +32,20 @@ class Order(models.Model):
             )
 
             for item in self.items.all():
+                batch = (
+                    Batch.objects.filter(
+                        product=item.product,
+                        warehouse=warehouse,
+                        quantity__gt=0,
+                    )
+                    .order_by("-expiry_date")
+                    .first()
+                )
+
                 SaleInvoiceItem.objects.create(
                     invoice=invoice,
                     product=item.product,
+                    batch=batch,
                     quantity=item.quantity,
                     rate=item.price,
                     amount=item.amount,
