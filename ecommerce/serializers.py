@@ -20,6 +20,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "product",
             "quantity",
             "price",
+            "bid_price",
             "amount",
         ]
 
@@ -41,6 +42,8 @@ class OrderSerializer(serializers.ModelSerializer):
             "customer",
             "status",
             "total_amount",
+            "paid_amount",
+            "address",
             "items",
         ]
 

@@ -1,7 +1,8 @@
 from datetime import date, timedelta
 from django.db import models
 
-
+from django.db import connection
+from django.db.utils import ProgrammingError, OperationalError
 class FinancialYear(models.Model):
     """Represents an accounting year and tracks which year is active."""
 
@@ -13,16 +14,21 @@ class FinancialYear(models.Model):
     @classmethod
     def get_active(cls):
         """Return the active year, creating a default one if none exists."""
-        year = cls.objects.filter(is_active=True).first()
-        if year:
-            return year
-        today = date.today()
-        return cls.objects.create(
-            name=str(today.year),
-            start_date=date(today.year, 1, 1),
-            end_date=date(today.year, 12, 31),
-            is_active=True,
-        )
+        try:
+            if 'finance_financialyear' not in connection.introspection.table_names():
+                    return None
+            year = cls.objects.filter(is_active=True).first()
+            if year:
+                return year
+            today = date.today()
+            return cls.objects.create(
+                name=str(today.year),
+                start_date=date(today.year, 1, 1),
+                end_date=date(today.year, 12, 31),
+                is_active=True,
+            )
+        except (ProgrammingError, OperationalError):
+                return None
 
     def activate(self):
         """Activate this financial year and deactivate others."""

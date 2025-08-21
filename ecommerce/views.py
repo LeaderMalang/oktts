@@ -11,7 +11,28 @@ from setting.models import Warehouse
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().prefetch_related("items")
     serializer_class = OrderSerializer
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
 
+        start_date = self.request.query_params.get("startDate")
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+
+        end_date = self.request.query_params.get("endDate")
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+
+        search = self.request.query_params.get("searchTerm")
+        if search:
+            qs = qs.filter(
+                Q(order_no__icontains=search) |
+                Q(customer__name__icontains=search)
+            )
+
+        return qs
     @action(
         detail=False,
         methods=["get"],

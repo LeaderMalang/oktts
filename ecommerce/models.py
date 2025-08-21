@@ -8,6 +8,8 @@ class Order(models.Model):
     STATUS_CHOICES = (
         ("Pending", "Pending"),
         ("Confirmed", "Confirmed"),
+        ("Cancelled", "Cancelled"),
+        ("Completed", "Completed"),
     )
 
     order_no = models.CharField(max_length=50, unique=True)
@@ -15,12 +17,13 @@ class Order(models.Model):
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     sale_invoice = models.OneToOneField("sale.SaleInvoice", null=True, blank=True, on_delete=models.SET_NULL)
-
+    address = models.TextField(blank=True, null=True)
     def __str__(self):
         return self.order_no
 
-    def confirm(self, warehouse, payment_method):
+    def confirm(self, warehouse, payment_method,payment_terms=None):
         with transaction.atomic():
             invoice = SaleInvoice.objects.create(
                 invoice_no=self.order_no,
@@ -29,6 +32,8 @@ class Order(models.Model):
                 warehouse=warehouse,
                 total_amount=self.total_amount,
                 payment_method=payment_method,
+                paid_amount=self.paid_amount,
+                payment_term=payment_terms,
             )
 
             for item in self.items.all():
@@ -64,4 +69,5 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    bid_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)

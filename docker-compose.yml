@@ -1,6 +1,18 @@
-version: '3.9'
 
 services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: oktts
+      POSTGRES_USER: oktts
+      POSTGRES_PASSWORD: oktts
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oktts -d oktts"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
   web:
     build: .
     command: gunicorn erp.wsgi:application --bind 0.0.0.0:8000
@@ -10,19 +22,13 @@ services:
       - "8000:8000"
     depends_on:
       - db
-      - nginx
 
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: oktts
-      POSTGRES_USER: oktts
-      POSTGRES_PASSWORD: oktts
-    volumes:
-      - db_data:/var/lib/postgresql/data
+  
 
   nginx:
     image: nginx:latest
+    depends_on:
+      - web
     ports:
       - "80:80"
     volumes:

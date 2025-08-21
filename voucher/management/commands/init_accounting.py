@@ -10,11 +10,11 @@ DEFAULT_COA = {
         ('1002', 'Bank'),
         ('1003', 'Accounts Receivable'),
         ('1004', 'Inventory'),
-        ("1300","Purchase tax receivable")
+        ("1300","Purchase tax receivable"),
         ("1400", "Prepaid Expenses"),
         ("1500", "Fixed Assets"),
         ("1600", "Accumulated Depreciation"),
-        ("1700", "Other Assets")
+        ("1700", "Other Assets"),
         ('1005', 'Short-term Investments'),
         ('1006', 'Long-term Investments'),
         ('1007', 'Intangible Assets'),
@@ -29,7 +29,7 @@ DEFAULT_COA = {
         ("2200", "Withholding tax payable"),
         ("2300", "Payroll tax payable"),
         ("2400", "Other current liabilities"),
-        ("2500", "Long-term liabilities")
+        ("2500", "Long-term liabilities"),
         ('2003', 'Accrued Expenses'),
         ('2004', 'Unearned Revenue'),
         ('2005', 'Credit Card Payable'),
