@@ -53,7 +53,6 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "delivery_man_id",
             "city_id",
             "area_id",
-            "sub_total",
             "discount",
             "tax",
             "paid_amount",
@@ -66,7 +65,6 @@ class SaleInvoiceSerializer(serializers.ModelSerializer):
             "items",
             "recovery_logs",
             "payment_schedules",
-            "address",
             "total_amount",
         ]
         read_only_fields = ("grand_total", "net_amount")

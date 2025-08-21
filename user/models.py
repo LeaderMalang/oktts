@@ -28,6 +28,7 @@ class CustomUser(AbstractUser):
     ROLES = (
         ('SUPER_ADMIN', 'Super Admin'),
         ('CUSTOMER', 'Customer'),
+        ('SUPPLIER', 'Supplier'),
         ('MANAGER', 'Manager'),
         ('SALES', 'Sales'),
         ('DELIVERY', 'Delivery'),

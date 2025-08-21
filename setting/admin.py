@@ -30,3 +30,4 @@ class BranchAdmin(admin.ModelAdmin):
 @admin.register(Warehouse)
 class WarehouseAdmin(admin.ModelAdmin):
     list_display = ['name', 'branch']
+    search_fields = ("name", "branch__name")

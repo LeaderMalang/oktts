@@ -3,7 +3,46 @@ from django.forms.models import inlineformset_factory
 
 from .models import SaleInvoice, SaleInvoiceItem
 
+from .models import SaleReturn, SaleReturnItem
 
+class SaleReturnAdminForm(forms.ModelForm):
+    class Meta:
+        model = SaleReturn
+        fields = ["return_no", "date", "invoice", "customer", "warehouse", "payment_method", "total_amount", "voucher"]
+        widgets = {
+            "total_amount": forms.NumberInput(attrs={"readonly": "readonly"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        # allow admin to pass request for GET initial (optional)
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+
+        # If creating new and invoice is preselected via ?invoice=<id>, set initials
+        if not self.instance.pk:
+            invoice_id = None
+            if self.request:
+                invoice_id = self.request.GET.get("invoice") or self.request.POST.get("invoice")
+            inv = None
+            try:
+                inv = self.instance.invoice or (invoice_id and self._meta.model._meta.apps.get_model('sale','SaleInvoice').objects.filter(pk=invoice_id).select_related('customer','warehouse').first())
+            except Exception:
+                inv = None
+
+            if inv:
+                self.fields["customer"].initial = inv.customer_id
+                self.fields["warehouse"].initial = inv.warehouse_id
+                self.fields["payment_method"].initial = inv.payment_method
+
+    def clean(self):
+        cleaned = super().clean()
+        inv = cleaned.get("invoice")
+        # Always mirror key fields from invoice (admin can still change if you want, else set them read‑only in ModelAdmin)
+        if inv:
+            cleaned["customer"] = inv.customer
+            cleaned["warehouse"] = inv.warehouse
+            cleaned["payment_method"] = inv.payment_method
+        return cleaned
 class SaleInvoiceForm(forms.ModelForm):
     class Meta:
         model = SaleInvoice

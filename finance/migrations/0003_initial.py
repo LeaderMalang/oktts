@@ -9,14 +9,14 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('hr', '0001_initial'),
+        ('finance', '0002_initial'),
         ('sale', '0001_initial'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='deliveryassignment',
-            name='sale',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sale.saleinvoice'),
+            model_name='paymentschedule',
+            name='sale_invoice',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='payment_schedules', to='sale.saleinvoice'),
         ),
     ]

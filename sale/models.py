@@ -13,9 +13,15 @@ from utils.stock import stock_return, stock_out
 from finance.models import PaymentTerm, PaymentSchedule
 from datetime import timedelta
 from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
-
+from decimal import Decimal
+from django.db import transaction
+from utils.voucher import post_composite_sales_voucher,post_composite_sales_return_voucher
 logger = logging.getLogger(__name__)
 
+
+
+def _cash_or_bank_for(warehouse):
+    return warehouse.default_cash_account or warehouse.default_bank_account
 # Create your models here.
 class SaleInvoice(models.Model):
     PAYMENT_CHOICES = (("Cash", "Cash"), ("Credit", "Credit"))
@@ -70,34 +76,36 @@ class SaleInvoice(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
 
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
-        # --- Compute financial totals ---
-        # Grand total is base amount minus discount plus tax
+        # Compute totals
         self.grand_total = (self.total_amount or 0) - (self.discount or 0) + (self.tax or 0)
-        # Paid amount defaults to zero if not provided
         self.paid_amount = self.paid_amount or 0
-        # Net amount represents the remaining balance after payment
         self.net_amount = self.grand_total - self.paid_amount
-        # --- End financial calculations ---
 
         is_new = self.pk is None
         super().save(*args, **kwargs)
+
         if is_new:
+            # 1) Stock-out per item
             for item in self.items.all():
                 stock_out(
                     product=item.product,
-                    quantity=item.quantity + item.bonus,
-                    reason=f"Sale Invoice {self.invoice_no}"
+                    quantity=item.quantity + getattr(item, "bonus", 0),
+                    reason=f"Sale Invoice {self.invoice_no}",
                 )
 
-            outstanding = self.grand_total - self.paid_amount
+            # 2) Customer balance increases by outstanding only
+            outstanding = Decimal(self.grand_total) - Decimal(self.paid_amount or 0)
             if outstanding:
-                self.customer.current_balance += outstanding
+                self.customer.current_balance = (self.customer.current_balance or 0) + outstanding
                 self.customer.save(update_fields=["current_balance"])
 
+            # 3) Optional: payment schedule from payment_term
             if self.payment_term:
-                installment_amount = self.grand_total / (self.payment_term.installments or 1)
-                for i in range(self.payment_term.installments):
+                installments = self.payment_term.installments or 1
+                installment_amount = outstanding / installments
+                for i in range(installments):
                     due_date = self.date + timedelta(days=self.payment_term.interval_days * (i + 1))
                     PaymentSchedule.objects.create(
                         term=self.payment_term,
@@ -106,45 +114,27 @@ class SaleInvoice(models.Model):
                         amount=installment_amount,
                     )
 
+        # 4) Post the composite sales voucher once
         if not self.voucher:
-            if self.payment_method == "Cash":
-                debit_account = self.warehouse.default_cash_account or self.warehouse.default_bank_account
-            else:
-                debit_account = self.customer.chart_of_account
+            cash_or_bank = None
+            # Cash purchase (full paid) OR mixed (partial) → need cash/bank account
+            if (self.payment_method == "Cash") or (Decimal(self.paid_amount or 0) > 0):
+                cash_or_bank = _cash_or_bank_for(self.warehouse)
 
-            if self.tax and self.tax > 0:
-                voucher_type = VoucherType.objects.get(code="SAL")
-                tax_account = ChartOfAccount.objects.get(code=TAX_PAYABLE_ACCOUNT_CODE)
-                entries = [
-                    {"account": debit_account, "debit": self.grand_total, "credit": 0},
-                    {
-                        "account": self.warehouse.default_sales_account,
-                        "debit": 0,
-                        "credit": self.grand_total - self.tax,
-                    },
-                    {"account": tax_account, "debit": 0, "credit": self.tax},
-                ]
-                voucher = Voucher.create_with_entries(
-                    voucher_type=voucher_type,
-                    date=self.date,
-                    narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
-                    created_by=getattr(self, "created_by", None),
-                    entries=entries,
-                    branch=getattr(self, "branch", None),
-                )
-            else:
-                voucher = create_voucher_for_transaction(
-                    voucher_type_code='SAL',
-                    date=self.date,
-                    amount=self.grand_total,
-                    narration=f"Auto-voucher for Sale Invoice {self.invoice_no}",
-                    debit_account=debit_account,
-                    credit_account=self.warehouse.default_sales_account,
-                    created_by=getattr(self, 'created_by', None),
-                    branch=getattr(self, 'branch', None)
-                )
+            voucher = post_composite_sales_voucher(
+                date=self.date,
+                invoice_no=self.invoice_no,
+                grand_total=Decimal(self.grand_total),
+                tax=Decimal(self.tax or 0),
+                paid_amount=Decimal(self.paid_amount or 0),
+                sales_account=self.warehouse.default_sales_account,
+                customer_account=self.customer.chart_of_account,
+                cash_or_bank_account=cash_or_bank,
+                created_by=getattr(self, "created_by", None),
+                branch=getattr(self, "branch", None),
+            )
             self.voucher = voucher
-            super().save(update_fields=['voucher'])
+            super().save(update_fields=["voucher"])
             logger.info("Linked voucher %s to sale invoice %s", voucher.pk, self.pk)
 
 
@@ -175,50 +165,49 @@ class SaleReturn(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
     voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        if self.items.exists() and not self.voucher:
+        # 1) Stock back in (per-line batches)
+        if is_new and self.items.exists():
             for item in self.items.all():
                 stock_return(
                     product=item.product,
                     quantity=item.quantity,
-                    batch_number=item.batch_number,
-                    reason=f"Sale Return {self.return_no}"
+                    batch_number=getattr(item, "batch_number", ""),  # if you store it
+                    reason=f"Sale Return {self.return_no}",
                 )
 
-            self.customer.current_balance -= self.total_amount
-            self.customer.save(update_fields=["current_balance"])
+        # 2) Voucher (single composite)
         if not self.voucher:
+            # Refund_now if "Cash" (give cash/bank back). Credit note if "Credit".
+            refund_now = True if self.payment_method == "Cash" else False
+            cash_or_bank = _cash_or_bank_for(self.warehouse) if refund_now else None
 
+            # Choose your Sales Returns account (contra revenue)
+            sales_return_account = getattr(self.warehouse, "default_sales_return_account", None) or self.warehouse.default_sales_account
 
-
-            payment_method = (
-                self.invoice.payment_method if self.invoice else "Cash"
-            )
-            if payment_method == "Cash":
-                credit_account = ChartOfAccount.objects.get(code="1001")
-            else:
-                credit_account = self.customer.chart_of_account
-                if self.customer and self.customer.current_balance is not None:
-                    self.customer.current_balance -= self.total_amount
-                    self.customer.save(update_fields=["current_balance"])
-
-
-
-            voucher = create_voucher_for_transaction(
-                voucher_type_code='SRN',
+            voucher = post_composite_sales_return_voucher(
                 date=self.date,
-                amount=self.total_amount,
-                narration=f"Auto-voucher for Sale Return {self.return_no}",
-
-                debit_account=self.warehouse.default_sales_account,  # reverse sale
-                credit_account=credit_account,  # reduce receivable
-                created_by=getattr(self, 'created_by', None),
-                branch=getattr(self, 'branch', None),
+                return_no=self.return_no,
+                total_amount=Decimal(self.total_amount),
+                tax=Decimal(getattr(self, "tax", 0) or 0),
+                sales_return_account=sales_return_account,
+                customer_account=self.customer.chart_of_account,
+                cash_or_bank_account=cash_or_bank,
+                refund_now=refund_now,
+                created_by=getattr(self, "created_by", None),
+                branch=getattr(self, "branch", None),
             )
             self.voucher = voucher
-            self.save(update_fields=["voucher"])
+            super().save(update_fields=["voucher"])
+
+            # 3) Adjust customer balance ONLY for credit note (i.e., not cash refund)
+            if not refund_now:
+                self.customer.current_balance = (self.customer.current_balance or 0) - Decimal(self.total_amount)
+                self.customer.save(update_fields=["current_balance"])
 
 
 class SaleReturnItem(models.Model):
@@ -231,7 +220,7 @@ class SaleReturnItem(models.Model):
     discount1 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount2 = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    net_amount = models.DecimalField(max_digits=12, decimal_places=2,default=0)
 
 
 
