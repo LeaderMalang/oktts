@@ -14,6 +14,7 @@ Retrieve all orders for a specific customer via:
 ```
 GET /ecommerce/orders/customer/<customer_id>/
 ```
+
 Optional query parameters `limit` and `offset` can be used for pagination, e.g.:
 
 ```
@@ -21,3 +22,4 @@ GET /ecommerce/orders/customer/<customer_id>/?limit=10&offset=0
 ```
 
 The response includes pagination fields (`count`, `next`, `previous`) alongside the results.
+
