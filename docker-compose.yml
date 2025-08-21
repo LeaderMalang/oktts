@@ -31,9 +31,12 @@ services:
       - web
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - static_volume:/static
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certs/server.crt:/etc/ssl/certs/server.crt:ro
+      - ./certs/server.key:/etc/ssl/private/server.key:ro
 
 volumes:
   db_data:
