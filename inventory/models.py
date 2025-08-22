@@ -13,6 +13,7 @@ class Product(models.Model):
     sales_tax_ratio = models.DecimalField(max_digits=5, decimal_places=2)
     fed_tax_ratio = models.DecimalField(max_digits=5, decimal_places=2)
     disable_sale_purchase = models.BooleanField(default=False)
+    packing= models.CharField(max_length=100, blank=True, null=True)
     image_1 = models.ImageField(upload_to='static/products/', null=True, blank=True)
     image_2 = models.ImageField(upload_to='static/products/', null=True, blank=True)
 
