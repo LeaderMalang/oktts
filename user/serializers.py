@@ -6,7 +6,7 @@ from inventory.models import Party
 from .models import CustomUser, PasswordResetCode
 from utils.geocode import reverse_geocode
 from setting.models import City, Area
-
+from voucher.models import ChartOfAccount
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User model exposing basic fields."""
 
@@ -98,7 +98,10 @@ class PartySerializer(serializers.ModelSerializer):
         # remove any stray 'user' if sent in payload
         validated_data.pop("user", None)
         party = Party.objects.create(user=user, **validated_data)
+        code=party.name[:3].upper()+str(party.id).zfill(4)
+        account=ChartOfAccount.objects.create(name=party.name,account_type_id=1,code=code,parent_id=3)
         geo = reverse_geocode(validated_data.get("latitude"), validated_data.get("longitude"))
+        party.chart_of_account=account
         if geo.get("ok"):
             # upsert City/Area by name (simple)
             if geo.get("city"):

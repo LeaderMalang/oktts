@@ -74,44 +74,61 @@ def product_list(request):
 
 @api_view(["GET"])
 def party_list(request):
-    """Return all parties with camelCase keys."""
-    parties = Party.objects.values(
-        "id",
-        "name",
-        "address",
-        "phone",
-        "party_type",
-        "city_id",
-        "area_id",
-        "proprietor",
-        "license_no",
-        "license_expiry",
-        "category",
-        "latitude",
-        "longitude",
-        "credit_limit",
-        "current_balance",
-        "price_list",
-    )
+    """
+    Query params:
+      q=...                  (search in name, phone, proprietor)
+      partyType=customer     (or supplier, etc. case-insensitive)
+      cityId=123
+      areaId=456
+      page=1, page_size=25   (or whatever your MyCustomPagination uses)
+    """
+    q = (request.GET.get("q") or "").strip()
+    party_type = (request.GET.get("partyType") or "").strip()
+    city_id = (request.GET.get("cityId") or "").strip()
+    area_id = (request.GET.get("areaId") or "").strip()
+
+    qs = Party.objects.all().order_by("name")
+
+    if party_type:
+        qs = qs.filter(party_type__iexact=party_type)
+
+    if city_id:
+        # If city is an FK id, filtering on *_id is fastest.
+        qs = qs.filter(city_id=city_id)
+
+    if area_id:
+        qs = qs.filter(area_id=area_id)
+
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(phone__icontains=q) |
+            Q(proprietor__icontains=q)
+        )
+
+    paginator = MyCustomPagination()
+    page = paginator.paginate_queryset(qs, request)
+
     data = [
         {
-            "id": p["id"],
-            "name": p["name"],
-            "address": p["address"],
-            "phone": p["phone"],
-            "partyType": p["party_type"],
-            "cityId": p["city_id"],
-            "areaId": p["area_id"],
-            "proprietor": p["proprietor"],
-            "licenseNo": p["license_no"],
-            "licenseExpiry": p["license_expiry"],
-            "category": p["category"],
-            "latitude": p["latitude"],
-            "longitude": p["longitude"],
-            "creditLimit": float(p["credit_limit"]) if p["credit_limit"] is not None else None,
-            "currentBalance": float(p["current_balance"]) if p["current_balance"] is not None else None,
-            "priceListId": int(p["price_list"]) if p["price_list"] and str(p["price_list"]).isdigit() else None,
+            "id": p.id,
+            "name": p.name,
+            "address": p.address,
+            "phone": p.phone,
+            "partyType": p.party_type,
+            "cityId": p.city_id,          # uses FK id directly
+            "areaId": p.area_id,          # uses FK id directly
+            "proprietor": p.proprietor,
+            "licenseNo": p.license_no,
+            "licenseExpiry": p.license_expiry,
+            "category": p.category,
+            "latitude": p.latitude,
+            "longitude": p.longitude,
+            "creditLimit": float(p.credit_limit) if p.credit_limit is not None else None,
+            "currentBalance": float(p.current_balance) if p.current_balance is not None else None,
+            "priceListId": int(p.price_list) if p.price_list and str(p.price_list).isdigit() else None,
         }
-        for p in parties
+        for p in page
     ]
-    return JsonResponse(data, safe=False)
+
+    return paginator.get_paginated_response(data)

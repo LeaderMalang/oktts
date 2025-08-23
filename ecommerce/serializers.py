@@ -40,6 +40,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "order_no",
             "date",
             "customer",
+            "salesman",
             "status",
             "total_amount",
             "paid_amount",

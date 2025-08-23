@@ -23,6 +23,8 @@ from .serializers import (
 
 )
 from inventory.models import Party
+from hr.models import Employee
+from hr.serializers import EmployeeSerializer
 from user.models import CustomUser, PasswordResetCode
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet providing CRUD operations for users and a `me` endpoint."""
@@ -48,14 +50,25 @@ class AuthViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         token, _ = Token.objects.get_or_create(user=user)
-        try:
+        
+        if user.role == "CUSTOMER":
+            try:
 
-            party = Party.objects.get(user=user)
-            
-        except Party.DoesNotExist:
+                party = Party.objects.get(user=user)
+                
+            except Party.DoesNotExist:
 
-            party = None # Activate party if exists
-        return Response({"token": token.key, "user": UserSerializer(user).data,"party": PartySerializer(party).data if party else None})
+                party = None # Activate party if exists
+            return Response({"token": token.key, "user": UserSerializer(user).data,"party": PartySerializer(party).data if party else None,"role": user.role})
+        elif user.role == "SALES":
+            try:
+
+                employee = Employee.objects.get(user=user)
+                
+            except Party.DoesNotExist:
+
+                employee = None # Activate party if exists
+            return Response({"token": token.key, "user": UserSerializer(user).data, "employee": EmployeeSerializer(employee).data if employee else None,"role": user.role})
 
     @action(detail=False, methods=["post"], url_path="refresh", permission_classes=[permissions.IsAuthenticated])
     def refresh(self, request):

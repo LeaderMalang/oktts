@@ -122,6 +122,14 @@ class Party(models.Model):
     business_image = models.ImageField(upload_to='static/parties/', null=True, blank=True)
     def __str__(self):
         return f"{self.name} ({self.party_type})"
+    class Meta:
+        indexes = [
+            models.Index(fields=["party_type"]),
+            models.Index(fields=["city", "area"]),
+            models.Index(fields=["name"]),
+            models.Index(fields=["phone"]),
+            models.Index(fields=["proprietor"]),
+        ]
 
 
 # Custom price lists

@@ -2,7 +2,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
-
+from django.contrib.auth.hashers import make_password
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -44,6 +44,14 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ["role"]
     objects = CustomUserManager()
 
+    def save(self, *args, **kwargs):
+   
+        if self.password and not self.password.startswith(('pbkdf2_sha256$', 'bcrypt$', 'argon2')):
+        
+            self.password = make_password(self.password)
+        
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"{self.email} ({self.role})"
 

@@ -2,7 +2,7 @@ from django.db import models, transaction
 
 from inventory.models import Party, Product, Batch
 from sale.models import SaleInvoice, SaleInvoiceItem
-
+from hr.models import Employee
 
 class Order(models.Model):
     STATUS_CHOICES = (
@@ -15,6 +15,7 @@ class Order(models.Model):
     order_no = models.CharField(max_length=50, unique=True)
     date = models.DateField()
     customer = models.ForeignKey(Party, on_delete=models.CASCADE, limit_choices_to={'party_type': 'customer'})
+    salesman=models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_orders', limit_choices_to={'role': 'Sales'})
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)

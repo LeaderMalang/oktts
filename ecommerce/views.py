@@ -49,6 +49,24 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="salesman/(?P<salesman_id>[^/.]+)",
+    )
+    def list_by_salesman(self, request, salesman_id=None):
+        queryset = self.queryset.filter(salesman_id=salesman_id)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):

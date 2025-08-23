@@ -15,18 +15,31 @@ from .serializers import (
 from inventory.models import Party, Product, Batch, PriceList, PriceListItem
 from expense.models import ExpenseCategory
 from voucher.models import ChartOfAccount
+from rest_framework.decorators import action
 
 
 class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.all()
     serializer_class = CitySerializer
     permission_classes = [permissions.IsAuthenticated]
+    @action(detail=True, methods=["get"], url_path="areas")
+    def areas(self, request, pk=None):
+        qs = Area.objects.filter(city_id=pk).order_by("name")
+        data = AreaSerializer(qs, many=True).data
+        return Response(data)
 
 
 class AreaViewSet(viewsets.ModelViewSet):
     queryset = Area.objects.all()
     serializer_class = AreaSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    # def get_queryset(self):
+    #     qs = Area.objects.all()
+    #     city_id = self.request.query_params.get("city") or self.request.query_params.get("cityId")
+    #     if city_id:
+    #         qs = qs.filter(city_id=city_id)
+    #     return qs
 
 
 class CompanyViewSet(viewsets.ModelViewSet):
