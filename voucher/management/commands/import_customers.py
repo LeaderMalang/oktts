@@ -21,7 +21,18 @@ DATE_RX = re.compile(r"(?P<d>\d{2}/\d{2}/\d{4}|\d{2}/\d{4}|/ ?/)")
 DIGITS_RX = re.compile(r"\d")
 PHONE_RX = re.compile(r"(?:\+?\d[\d\-\s]{5,})")
 CATG_RX = re.compile(r"\b\d{1,4}\b")
+PHONE_MAX = 20
 
+def clean_phone(raw: str | None) -> str:
+    if not raw:
+        return ""
+    # keep digits and plus sign at start
+    raw = raw.strip()
+    m = re.match(r'^\+?', raw)  # keep one leading +
+    digits = re.sub(r'\D', '', raw)
+    phone = (m.group(0) if m else '') + digits
+    # clip hard to DB limit
+    return phone[:PHONE_MAX]
 NBSP = "\u00A0"
 
 def normalize_spaces(s: str) -> str:
@@ -267,7 +278,7 @@ class Command(BaseCommand):
                                 defaults={
                                     "party_type": party_type,
                                     "address": row.get("address") or "",
-                                    "phone": row.get("phone") or "",
+                                    "phone": clean_phone(row.get("phone")) or "",
                                     "proprietor": row.get("proprietor") or "",
                                     "license_no": row.get("license_no") or "",
                                     "license_expiry": row.get("license_expiry"),
