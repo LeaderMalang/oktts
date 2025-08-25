@@ -54,10 +54,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=["get"],
-        url_path="salesman/(?P<salesman_id>[^/.]+)",
+        url_path="salesman/(?P<salesman_id>[^/.]+)/customer/(?P<customer_id>[^/.]+)",
     )
-    def list_by_salesman(self, request, salesman_id=None):
-        queryset = self.queryset.filter(salesman_id=salesman_id)
+    def list_by_salesman(self, request, salesman_id=None,customer_id=None):
+        queryset = self.queryset.filter(salesman_id=salesman_id,customer_id=customer_id)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -76,3 +76,41 @@ class OrderViewSet(viewsets.ModelViewSet):
         invoice = order.confirm(warehouse, payment_method)
         serializer = SaleInvoiceSerializer(invoice)
         return Response(serializer.data)
+    @action(detail=True, methods=["post", "patch"], url_path="status")
+    def set_status(self, request, pk=None):
+        """
+        Update a single order's status by ID.
+        Body: {"status": "<new_status>", "note": "optional note"}
+        """
+        order = self.get_object()
+        new_status = (request.data.get("status") or "").strip()
+        if not new_status:
+            return Response({"detail": "status is required"}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        # Validate against model choices if present
+        if hasattr(Order, "STATUS_CHOICES") and Order.STATUS_CHOICES:
+            # Accept case-insensitive input
+            allowed = {k.upper(): k for k, _ in Order.STATUS_CHOICES}
+            if new_status.upper() not in allowed:
+                return Response(
+                    {"detail": f"Invalid status. Allowed: {', '.join(allowed.values())}"},
+                    status=http_status.HTTP_400_BAD_REQUEST,
+                )
+            new_status = allowed[new_status.upper()]
+
+        # Persist
+        fields_to_update = ["status"]
+        order.status = new_status
+
+        # # Optional note/audit, only if your model has such field(s)
+        # note = request.data.get("note")
+        # if hasattr(order, "status_note") and note:
+        #     order.status_note = str(note)
+        #     fields_to_update.append("status_note")
+        # if hasattr(order, "status_changed_at"):
+        #     from django.utils import timezone
+        #     order.status_changed_at = timezone.now()
+        #     fields_to_update.append("status_changed_at")
+
+        # order.save(update_fields=fields_to_update)
+        return Response(self.get_serializer(order).data)
