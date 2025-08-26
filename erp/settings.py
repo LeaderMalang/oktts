@@ -22,7 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-r3gb32-73qed2#%xux*zc)a)kj2smtnx1d6&t-h%g=!yawq3jj'
-
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 ENV= 'live'  # Set to 'production' in production environment
