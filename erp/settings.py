@@ -30,7 +30,6 @@ ENV= 'live'  # Set to 'production' in production environment
 ALLOWED_HOSTS = ["207.180.252.117", "localhost","127.0.0.1","erp.okdtts.com"]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "*",
     "http://localhost:5173",  # Add your frontend URL here
     "https://app.okdtts.com",
     "https://erp.okdtts.com",
