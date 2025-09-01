@@ -53,7 +53,7 @@ class OrderAdmin(admin.ModelAdmin):
                       or Warehouse.objects.first()
                     )
         payment_terms = ( PaymentTerm.objects.get(id=form.data.get("payment_terms"))
-                      or Warehouse.objects.first()
+                      or None
                     )
         payment_method = (
                 form.data.get("payment_method")

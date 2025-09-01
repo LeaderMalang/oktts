@@ -65,10 +65,13 @@ class AuthViewSet(viewsets.ViewSet):
 
                 employee = Employee.objects.get(user=user)
                 
-            except Party.DoesNotExist:
+            except Employee.DoesNotExist:
 
                 employee = None # Activate party if exists
             return Response({"token": token.key, "user": UserSerializer(user).data, "employee": EmployeeSerializer(employee).data if employee else None,"role": user.role})
+        elif user.role == "SUPER_ADMIN":
+            
+            return Response({"token": token.key, "user": UserSerializer(user).data,"role": user.role})
 
     @action(detail=False, methods=["post"], url_path="refresh", permission_classes=[permissions.IsAuthenticated])
     def refresh(self, request):
