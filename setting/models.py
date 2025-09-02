@@ -1,4 +1,5 @@
 from django.db import models
+from django_ledger.models.accounts import AccountModel
 
 # Create your models here.
 
@@ -20,14 +21,14 @@ class Area(models.Model):
 class Company(models.Model):
     name = models.CharField(max_length=100)
     payroll_expense_account = models.ForeignKey(
-        'voucher.ChartOfAccount',
+        AccountModel,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='payroll_expense_company'
     )
     payroll_payment_account = models.ForeignKey(
-        'voucher.ChartOfAccount',
+        AccountModel,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

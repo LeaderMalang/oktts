@@ -76,9 +76,7 @@ INSTALLED_APPS = [
     'expense',
     'report',
     'user',
-
-
-
+    'django_ledger',
     'crm',
     'task',
     'notification',

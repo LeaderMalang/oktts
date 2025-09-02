@@ -12,7 +12,11 @@ from django.test import SimpleTestCase, TestCase
 
 
 from setting.models import Company
-from voucher.models import AccountType, ChartOfAccount
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.transactions import TransactionModel
 from .models import Employee, LeaveRequest, PayrollSlip
 from .views import LeaveRequestViewSet
 
@@ -73,15 +77,24 @@ class LeaveRequestStatusAPITest(APITestCase):
         )
         self.assertEqual(resp.status_code, 400)
 
-class PayrollSlipVoucherTests(TestCase):
+class PayrollSlipLedgerTests(TestCase):
     def setUp(self):
-        expense = AccountType.objects.create(name="EXPENSE")
-        asset = AccountType.objects.create(name="ASSET")
-        self.expense_account = ChartOfAccount.objects.create(
-            name="Salaries", code="5002", account_type=expense
+        self.entity = EntityModel.objects.create(name="E1")
+        self.coa = ChartOfAccountModel.objects.create(name="Default", entity=self.entity)
+        self.ledger = LedgerModel.objects.create(entity=self.entity, name="Main")
+        self.expense_account = AccountModel.objects.create(
+            name="Salaries",
+            code="5002",
+            role="ex_regular",
+            balance_type="debit",
+            coa_model=self.coa,
         )
-        self.cash_account = ChartOfAccount.objects.create(
-            name="Cash", code="1001", account_type=asset
+        self.cash_account = AccountModel.objects.create(
+            name="Cash",
+            code="1001",
+            role="asset_ca_cash",
+            balance_type="debit",
+            coa_model=self.coa,
         )
         Company.objects.create(
             name="C1",
@@ -90,7 +103,7 @@ class PayrollSlipVoucherTests(TestCase):
         )
         self.employee = Employee.objects.create(name="John", phone="123")
 
-    def test_voucher_linked_and_net_salary_calculated(self):
+    def test_journal_entry_linked_and_net_salary_calculated(self):
         slip = PayrollSlip.objects.create(
             employee=self.employee,
             month=date(2024, 1, 1),
@@ -103,14 +116,16 @@ class PayrollSlipVoucherTests(TestCase):
         )
         slip.refresh_from_db()
         self.assertEqual(slip.net_salary, Decimal("2800"))
-        self.assertIsNotNone(slip.voucher)
-        voucher = slip.voucher
-        entries = list(voucher.entries.all().order_by("id"))
-        self.assertEqual(voucher.amount, Decimal("2800"))
+        self.assertIsNotNone(slip.journal_entry)
+        entries = list(
+            TransactionModel.objects.filter(journal_entry=slip.journal_entry).order_by("tx_type")
+        )
         self.assertEqual(len(entries), 2)
-        self.assertEqual(entries[0].account, self.expense_account)
-        self.assertEqual(entries[0].debit, Decimal("2800"))
-        self.assertEqual(entries[1].account, self.cash_account)
-        self.assertEqual(entries[1].credit, Decimal("2800"))
+        debit_entry = next(e for e in entries if e.tx_type == TransactionModel.DEBIT)
+        credit_entry = next(e for e in entries if e.tx_type == TransactionModel.CREDIT)
+        self.assertEqual(debit_entry.account, self.expense_account)
+        self.assertEqual(debit_entry.amount, Decimal("2800"))
+        self.assertEqual(credit_entry.account, self.cash_account)
+        self.assertEqual(credit_entry.amount, Decimal("2800"))
 
 
