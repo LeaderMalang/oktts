@@ -14,10 +14,6 @@ echo "✅ Postgres is up!"
 # Safe migrations
 python manage.py migrate --noinput
 
-# Seed data (idempotent commands)
-python manage.py init_accounting 
-python manage.py init_vouchertypes 
-
 # Collect static (optional, but good for nginx)
 python manage.py collectstatic --noinput
 
