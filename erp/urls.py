@@ -36,6 +36,7 @@ urlpatterns = [
 
 
     path('inventory/', include('inventory.urls')),
+    path('voucher/', include('voucher.urls')),
 
     path('crm/', include('crm.urls')),
     path('tasks/', include('task.urls')),
