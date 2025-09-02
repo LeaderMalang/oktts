@@ -6,6 +6,7 @@ MIGRATION_MODULES = {
     'purchase': None,
     'inventory': None,
     'setting': None,
+    'voucher': None,
     'hr': None,
     'expense': None,
     'report': None,
