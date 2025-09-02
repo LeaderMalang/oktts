@@ -1,8 +1,8 @@
 from datetime import date, timedelta
 from django.db import models
-
 from django.db import connection
 from django.db.utils import ProgrammingError, OperationalError
+from django_ledger.models.journal_entry import JournalEntryModel
 class FinancialYear(models.Model):
     """Represents an accounting year and tracks which year is active."""
 
@@ -57,13 +57,6 @@ class PaymentSchedule(models.Model):
     STATUS_CHOICES = (("Pending", "Pending"), ("Paid", "Paid"))
 
     term = models.ForeignKey(PaymentTerm, on_delete=models.CASCADE)
-    purchase_invoice = models.ForeignKey(
-        'purchase.PurchaseInvoice',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='payment_schedules',
-    )
     sale_invoice = models.ForeignKey(
         'sale.SaleInvoice',
         on_delete=models.CASCADE,
@@ -74,14 +67,14 @@ class PaymentSchedule(models.Model):
     due_date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
-    voucher = models.ForeignKey(
-        'voucher.Voucher',
+    journal_entry = models.ForeignKey(
+        JournalEntryModel,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
     )
 
     def __str__(self):  # pragma: no cover - display helper
-        invoice = self.purchase_invoice or self.sale_invoice
+        invoice = self.sale_invoice
         return f"Schedule for {invoice} due {self.due_date}" if invoice else "Schedule"
 

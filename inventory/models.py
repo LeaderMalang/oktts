@@ -1,6 +1,7 @@
 from django.db import models
 from setting.models import Company, Group, Distributor
 from user.models import CustomUser
+from django_ledger.models.accounts import AccountModel
 # Master Product
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -117,7 +118,7 @@ class Party(models.Model):
     license_expiry = models.DateField(null=True, blank=True)
     credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    chart_of_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True)
+    chart_of_account = models.ForeignKey(AccountModel, on_delete=models.SET_NULL, null=True, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
     business_image = models.ImageField(upload_to='static/parties/', null=True, blank=True)
     def __str__(self):

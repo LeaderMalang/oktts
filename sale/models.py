@@ -6,16 +6,21 @@ from inventory.models import Party, Product, Batch
 
 
 import logging
+from datetime import timedelta, datetime, time
+from decimal import Decimal
 
-from voucher.models import Voucher, ChartOfAccount, VoucherType
-from utils.voucher import create_voucher_for_transaction
+from django.db import transaction
+from django.utils import timezone
+from django_ledger.models import (
+    AccountModel,
+    JournalEntryModel,
+    LedgerModel,
+    TransactionModel,
+)
 from utils.stock import stock_return, stock_out
 from finance.models import PaymentTerm, PaymentSchedule
-from datetime import timedelta
 from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
-from decimal import Decimal
-from django.db import transaction
-from utils.voucher import post_composite_sales_voucher,post_composite_sales_return_voucher
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +74,9 @@ class SaleInvoice(models.Model):
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
     qr_code = models.CharField(max_length=255, blank=True)
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+    journal_entry = models.ForeignKey(
+        JournalEntryModel, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
     payment_term = models.ForeignKey(PaymentTerm, on_delete=models.SET_NULL, null=True, blank=True)
@@ -114,28 +121,72 @@ class SaleInvoice(models.Model):
                         amount=installment_amount,
                     )
 
-        # 4) Post the composite sales voucher once
-        if not self.voucher:
-            cash_or_bank = None
-            # Cash purchase (full paid) OR mixed (partial) → need cash/bank account
-            if (self.payment_method == "Cash") or (Decimal(self.paid_amount or 0) > 0):
-                cash_or_bank = _cash_or_bank_for(self.warehouse)
-
-            voucher = post_composite_sales_voucher(
-                date=self.date,
-                invoice_no=self.invoice_no,
-                grand_total=Decimal(self.grand_total),
-                tax=Decimal(self.tax or 0),
-                paid_amount=Decimal(self.paid_amount or 0),
-                sales_account=self.warehouse.default_sales_account,
-                customer_account=self.customer.chart_of_account,
-                cash_or_bank_account=cash_or_bank,
-                created_by=getattr(self, "created_by", None),
-                branch=getattr(self, "branch", None),
-            )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
-            logger.info("Linked voucher %s to sale invoice %s", voucher.pk, self.pk)
+        # 4) Create journal entry once
+        if not self.journal_entry:
+            ledger = LedgerModel.objects.first()
+            if ledger and self.warehouse.default_sales_account and self.customer.chart_of_account:
+                timestamp = timezone.make_aware(
+                    datetime.combine(self.date, time.min)
+                )
+                je = JournalEntryModel.objects.create(
+                    ledger=ledger,
+                    timestamp=timestamp,
+                    description=f"Sale Invoice {self.invoice_no}",
+                )
+                transactions = [
+                    TransactionModel(
+                        journal_entry=je,
+                        account=self.customer.chart_of_account,
+                        tx_type=TransactionModel.DEBIT,
+                        amount=self.grand_total,
+                        description="Sale",
+                    ),
+                    TransactionModel(
+                        journal_entry=je,
+                        account=self.warehouse.default_sales_account,
+                        tx_type=TransactionModel.CREDIT,
+                        amount=self.grand_total - Decimal(self.tax or 0),
+                        description="Revenue",
+                    ),
+                ]
+                if self.tax:
+                    tax_account = AccountModel.objects.filter(
+                        code=TAX_PAYABLE_ACCOUNT_CODE
+                    ).first()
+                    if tax_account:
+                        transactions.append(
+                            TransactionModel(
+                                journal_entry=je,
+                                account=tax_account,
+                                tx_type=TransactionModel.CREDIT,
+                                amount=self.tax,
+                                description="Tax payable",
+                            )
+                        )
+                if Decimal(self.paid_amount or 0) > 0:
+                    cash_or_bank = _cash_or_bank_for(self.warehouse)
+                    if cash_or_bank:
+                        transactions.append(
+                            TransactionModel(
+                                journal_entry=je,
+                                account=cash_or_bank,
+                                tx_type=TransactionModel.DEBIT,
+                                amount=self.paid_amount,
+                                description="Cash received",
+                            )
+                        )
+                        transactions.append(
+                            TransactionModel(
+                                journal_entry=je,
+                                account=self.customer.chart_of_account,
+                                tx_type=TransactionModel.CREDIT,
+                                amount=self.paid_amount,
+                                description="Payment",
+                            )
+                        )
+                TransactionModel.objects.bulk_create(transactions)
+                self.journal_entry = je
+                super().save(update_fields=["journal_entry"])
 
 
 
@@ -163,7 +214,9 @@ class SaleReturn(models.Model):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+    journal_entry = models.ForeignKey(
+        JournalEntryModel, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     @transaction.atomic
     def save(self, *args, **kwargs):
@@ -180,34 +233,69 @@ class SaleReturn(models.Model):
                     reason=f"Sale Return {self.return_no}",
                 )
 
-        # 2) Voucher (single composite)
-        if not self.voucher:
-            # Refund_now if "Cash" (give cash/bank back). Credit note if "Credit".
-            refund_now = True if self.payment_method == "Cash" else False
-            cash_or_bank = _cash_or_bank_for(self.warehouse) if refund_now else None
+        # 2) Journal entry (single composite)
+        if not self.journal_entry:
+            refund_now = self.payment_method == "Cash"
+            ledger = LedgerModel.objects.first()
+            if ledger and self.customer.chart_of_account:
+                timestamp = timezone.make_aware(
+                    datetime.combine(self.date, time.min)
+                )
+                je = JournalEntryModel.objects.create(
+                    ledger=ledger,
+                    timestamp=timestamp,
+                    description=f"Sale Return {self.return_no}",
+                )
+                sales_return_account = getattr(
+                    self.warehouse, "default_sales_return_account", None
+                ) or self.warehouse.default_sales_account
+                transactions = [
+                    TransactionModel(
+                        journal_entry=je,
+                        account=sales_return_account,
+                        tx_type=TransactionModel.DEBIT,
+                        amount=self.total_amount - Decimal(getattr(self, "tax", 0) or 0),
+                        description="Sales return",
+                    )
+                ]
+                tax_amount = Decimal(getattr(self, "tax", 0) or 0)
+                if tax_amount:
+                    tax_account = AccountModel.objects.filter(
+                        code=TAX_PAYABLE_ACCOUNT_CODE
+                    ).first()
+                    if tax_account:
+                        transactions.append(
+                            TransactionModel(
+                                journal_entry=je,
+                                account=tax_account,
+                                tx_type=TransactionModel.DEBIT,
+                                amount=tax_amount,
+                                description="Tax reversal",
+                            )
+                        )
+                target_account = (
+                    _cash_or_bank_for(self.warehouse)
+                    if refund_now
+                    else self.customer.chart_of_account
+                )
+                transactions.append(
+                    TransactionModel(
+                        journal_entry=je,
+                        account=target_account,
+                        tx_type=TransactionModel.CREDIT,
+                        amount=self.total_amount,
+                        description="Refund" if refund_now else "Credit note",
+                    )
+                )
+                TransactionModel.objects.bulk_create(transactions)
+                self.journal_entry = je
+                super().save(update_fields=["journal_entry"])
 
-            # Choose your Sales Returns account (contra revenue)
-            sales_return_account = getattr(self.warehouse, "default_sales_return_account", None) or self.warehouse.default_sales_account
-
-            voucher = post_composite_sales_return_voucher(
-                date=self.date,
-                return_no=self.return_no,
-                total_amount=Decimal(self.total_amount),
-                tax=Decimal(getattr(self, "tax", 0) or 0),
-                sales_return_account=sales_return_account,
-                customer_account=self.customer.chart_of_account,
-                cash_or_bank_account=cash_or_bank,
-                refund_now=refund_now,
-                created_by=getattr(self, "created_by", None),
-                branch=getattr(self, "branch", None),
-            )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
-
-            # 3) Adjust customer balance ONLY for credit note (i.e., not cash refund)
-            if not refund_now:
-                self.customer.current_balance = (self.customer.current_balance or 0) - Decimal(self.total_amount)
-                self.customer.save(update_fields=["current_balance"])
+                if not refund_now:
+                    self.customer.current_balance = (
+                        self.customer.current_balance or 0
+                    ) - Decimal(self.total_amount)
+                    self.customer.save(update_fields=["current_balance"])
 
 
 class SaleReturnItem(models.Model):
