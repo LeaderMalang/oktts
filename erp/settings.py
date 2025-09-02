@@ -69,7 +69,6 @@ INSTALLED_APPS = [
     'hr',
     'setting',
     'inventory',
-    'voucher',
     'sale',
     'ecommerce',
     'purchase',
