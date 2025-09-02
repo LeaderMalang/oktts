@@ -7,15 +7,15 @@ from inventory.models import Party, Product, Batch
 
 import logging
 
-from voucher.models import Voucher, ChartOfAccount, VoucherType
-from utils.voucher import create_voucher_for_transaction
 from utils.stock import stock_return, stock_out
 from finance.models import PaymentTerm, PaymentSchedule
 from datetime import timedelta
-from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
 from decimal import Decimal
 from django.db import transaction
-from utils.voucher import post_composite_sales_voucher,post_composite_sales_return_voucher
+from utils.ledger import (
+    post_sales_invoice_ledger,
+    post_sales_return_ledger,
+)
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +69,6 @@ class SaleInvoice(models.Model):
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2)
     qr_code = models.CharField(max_length=255, blank=True)
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES)
     payment_term = models.ForeignKey(PaymentTerm, on_delete=models.SET_NULL, null=True, blank=True)
@@ -114,14 +113,12 @@ class SaleInvoice(models.Model):
                         amount=installment_amount,
                     )
 
-        # 4) Post the composite sales voucher once
-        if not self.voucher:
+            # 4) Post the ledger entries for this invoice
             cash_or_bank = None
-            # Cash purchase (full paid) OR mixed (partial) → need cash/bank account
             if (self.payment_method == "Cash") or (Decimal(self.paid_amount or 0) > 0):
                 cash_or_bank = _cash_or_bank_for(self.warehouse)
 
-            voucher = post_composite_sales_voucher(
+            post_sales_invoice_ledger(
                 date=self.date,
                 invoice_no=self.invoice_no,
                 grand_total=Decimal(self.grand_total),
@@ -133,9 +130,7 @@ class SaleInvoice(models.Model):
                 created_by=getattr(self, "created_by", None),
                 branch=getattr(self, "branch", None),
             )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
-            logger.info("Linked voucher %s to sale invoice %s", voucher.pk, self.pk)
+            logger.info("Posted ledger for sale invoice %s", self.pk)
 
 
 
@@ -163,33 +158,29 @@ class SaleReturn(models.Model):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     @transaction.atomic
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        # 1) Stock back in (per-line batches)
-        if is_new and self.items.exists():
-            for item in self.items.all():
-                stock_return(
-                    product=item.product,
-                    quantity=item.quantity,
-                    batch_number=getattr(item, "batch_number", ""),  # if you store it
-                    reason=f"Sale Return {self.return_no}",
-                )
+        if is_new:
+            # 1) Stock back in (per-line batches)
+            if self.items.exists():
+                for item in self.items.all():
+                    stock_return(
+                        product=item.product,
+                        quantity=item.quantity,
+                        batch_number=getattr(item, "batch_number", ""),
+                        reason=f"Sale Return {self.return_no}",
+                    )
 
-        # 2) Voucher (single composite)
-        if not self.voucher:
-            # Refund_now if "Cash" (give cash/bank back). Credit note if "Credit".
+            # 2) Post ledger entries
             refund_now = True if self.payment_method == "Cash" else False
             cash_or_bank = _cash_or_bank_for(self.warehouse) if refund_now else None
-
-            # Choose your Sales Returns account (contra revenue)
             sales_return_account = getattr(self.warehouse, "default_sales_return_account", None) or self.warehouse.default_sales_account
 
-            voucher = post_composite_sales_return_voucher(
+            post_sales_return_ledger(
                 date=self.date,
                 return_no=self.return_no,
                 total_amount=Decimal(self.total_amount),
@@ -201,8 +192,6 @@ class SaleReturn(models.Model):
                 created_by=getattr(self, "created_by", None),
                 branch=getattr(self, "branch", None),
             )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
 
             # 3) Adjust customer balance ONLY for credit note (i.e., not cash refund)
             if not refund_now:
