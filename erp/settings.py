@@ -26,7 +26,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ENV= 'live'  # Set to 'production' in production environment
+ENV = 'dev'  # Use SQLite during tests
 ALLOWED_HOSTS = ["207.180.252.117", "localhost","127.0.0.1","erp.okdtts.com"]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
@@ -66,23 +66,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'drf_spectacular',
-    'hr',
     'setting',
     'inventory',
     'sale',
-    'ecommerce',
     'purchase',
-    'finance',
-    'expense',
-    'report',
     'user',
-    'django_ledger',
-    'crm',
-    'task',
-    'notification',
-    'pricing',
-    'investor',
-    'syncqueue',
+    'finance',
+    'hr',
+    'voucher',
     'django_ledger',
     'corsheaders',
 
