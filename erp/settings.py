@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'pricing',
     'investor',
     'syncqueue',
+    'django_ledger',
     'corsheaders',
 
 
@@ -217,3 +218,8 @@ else:
 STATICFILES_DIRS = [
     BASE_DIR / "staticfilesDir",
 ]
+
+# Django Ledger configuration
+DJANGO_LEDGER_ORGANIZATION = "OKTTS"
+DJANGO_LEDGER_LEDGER_BASE = "ledger"
+DJANGO_LEDGER_CURRENCY = "USD"
