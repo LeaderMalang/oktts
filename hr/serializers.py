@@ -156,6 +156,6 @@ class PayrollSlipSerializer(serializers.ModelSerializer):
             "leaves_paid",
             "deductions",
             "net_salary",
-            "voucher",
+            "journal_entry",
             "created_on",
         ]
