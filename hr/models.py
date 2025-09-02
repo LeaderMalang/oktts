@@ -3,9 +3,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from user.models import CustomUser
 from decimal import Decimal
-from utils.voucher import create_voucher_for_transaction
-from voucher.models import VoucherType
 from setting.models import Company
+from utils.voucher import post_payroll_voucher
 
 
 class EmployeeRole(models.TextChoices):
@@ -150,7 +149,6 @@ class PayrollSlip(models.Model):
     leaves_paid = models.PositiveIntegerField(default=0)
     deductions = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     net_salary = models.DecimalField(max_digits=10, decimal_places=2)
-    voucher = models.ForeignKey('voucher.Voucher', on_delete=models.SET_NULL, null=True, blank=True)
 
     created_on = models.DateTimeField(auto_now_add=True)
 
@@ -160,23 +158,17 @@ class PayrollSlip(models.Model):
         unpaid_absent = max(self.absent_days - self.leaves_paid, 0)
         self.net_salary = self.base_salary - (per_day * unpaid_absent) - self.deductions
         super().save(*args, **kwargs)
-
-        if not self.voucher:
-            VoucherType.objects.get_or_create(code="PAY", name="Payroll")
-            company = Company.objects.first()
-            if company and company.payroll_expense_account and company.payroll_payment_account:
-                voucher = create_voucher_for_transaction(
-                    voucher_type_code="PAY",
-                    date=self.month,
-                    amount=self.net_salary,
-                    narration=f"Payroll for {self.employee.name} - {self.month.strftime('%B %Y')}",
-                    debit_account=company.payroll_expense_account,
-                    credit_account=company.payroll_payment_account,
-                    created_by=getattr(self, 'created_by', None),
-                    branch=getattr(self, 'branch', None),
-                )
-                self.voucher = voucher
-                super().save(update_fields=['voucher'])
+        company = Company.objects.first()
+        if company and company.payroll_expense_account and company.payroll_payment_account:
+            post_payroll_voucher(
+                date=self.month,
+                amount=self.net_salary,
+                payroll_expense_account=company.payroll_expense_account,
+                payroll_payment_account=company.payroll_payment_account,
+                narration=f"Payroll for {self.employee.name} - {self.month.strftime('%B %Y')}",
+                created_by=getattr(self, 'created_by', None),
+                branch=getattr(self, 'branch', None),
+            )
 
     def __str__(self):
         return f"{self.employee.name} - {self.month.strftime('%B %Y')}"

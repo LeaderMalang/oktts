@@ -12,7 +12,7 @@ from django.test import SimpleTestCase, TestCase
 
 
 from setting.models import Company
-from voucher.models import AccountType, ChartOfAccount
+from voucher.models import AccountType, ChartOfAccount, Voucher
 from .models import Employee, LeaveRequest, PayrollSlip
 from .views import LeaveRequestViewSet
 
@@ -73,7 +73,7 @@ class LeaveRequestStatusAPITest(APITestCase):
         )
         self.assertEqual(resp.status_code, 400)
 
-class PayrollSlipVoucherTests(TestCase):
+class PayrollSlipLedgerTests(TestCase):
     def setUp(self):
         expense = AccountType.objects.create(name="EXPENSE")
         asset = AccountType.objects.create(name="ASSET")
@@ -90,7 +90,7 @@ class PayrollSlipVoucherTests(TestCase):
         )
         self.employee = Employee.objects.create(name="John", phone="123")
 
-    def test_voucher_linked_and_net_salary_calculated(self):
+    def test_ledger_created_and_net_salary_calculated(self):
         slip = PayrollSlip.objects.create(
             employee=self.employee,
             month=date(2024, 1, 1),
@@ -103,8 +103,8 @@ class PayrollSlipVoucherTests(TestCase):
         )
         slip.refresh_from_db()
         self.assertEqual(slip.net_salary, Decimal("2800"))
-        self.assertIsNotNone(slip.voucher)
-        voucher = slip.voucher
+        self.assertEqual(Voucher.objects.count(), 1)
+        voucher = Voucher.objects.first()
         entries = list(voucher.entries.all().order_by("id"))
         self.assertEqual(voucher.amount, Decimal("2800"))
         self.assertEqual(len(entries), 2)

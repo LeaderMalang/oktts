@@ -336,6 +336,49 @@ def post_composite_sales_voucher(
     return v
 
 
+def post_payroll_voucher(
+    *,
+    date,
+    amount,
+    payroll_expense_account,
+    payroll_payment_account,
+    narration,
+    created_by=None,
+    branch=None,
+    financial_year=None,
+):
+    """Post a payroll voucher.
+
+    DR payroll_expense_account
+    CR payroll_payment_account (cash/bank)
+    """
+    vt, _ = VoucherType.objects.get_or_create(code="PAY", defaults={"name": "Payroll"})
+    entries = [
+        {
+            "account": payroll_expense_account,
+            "debit": amount,
+            "credit": 0,
+            "remarks": "Payroll expense",
+        },
+        {
+            "account": payroll_payment_account,
+            "debit": 0,
+            "credit": amount,
+            "remarks": "Payroll payment",
+        },
+    ]
+    v = Voucher.create_with_entries(
+        voucher_type=vt,
+        date=date,
+        narration=narration,
+        created_by=created_by,
+        entries=entries,
+        branch=branch,
+        financial_year=financial_year,
+    )
+    return v
+
+
 def create_voucher_for_transaction(
     *,
     voucher_type_code,
