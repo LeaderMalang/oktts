@@ -1,13 +1,19 @@
 from django.db import models
+from datetime import datetime, time
 
-from voucher.models import ChartOfAccount, Voucher, VoucherType
-from utils.voucher import create_voucher_for_transaction
+from django.utils import timezone
+from django_ledger.models import (
+    AccountModel,
+    JournalEntryModel,
+    LedgerModel,
+    TransactionModel,
+)
 
 
 class ExpenseCategory(models.Model):
-    """Represents a grouping for expenses tied to a chart of account."""
+    """Represents a grouping for expenses tied to an account."""
     name = models.CharField(max_length=100, unique=True)
-    chart_of_account = models.ForeignKey(ChartOfAccount, on_delete=models.PROTECT)
+    chart_of_account = models.ForeignKey(AccountModel, on_delete=models.PROTECT)
 
     def __str__(self) -> str:
 
@@ -16,37 +22,56 @@ class ExpenseCategory(models.Model):
 
 class Expense(models.Model):
 
-    """An individual expense entry that posts to accounting via a voucher."""
+    """An individual expense entry that posts to accounting via a journal entry."""
     date = models.DateField()
     category = models.ForeignKey(ExpenseCategory, on_delete=models.PROTECT)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     description = models.TextField(blank=True)
     payment_account = models.ForeignKey(
-        ChartOfAccount, on_delete=models.PROTECT, related_name="expense_payments"
+        AccountModel, on_delete=models.PROTECT, related_name="expense_payments"
     )
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
+    journal_entry = models.ForeignKey(
+        JournalEntryModel, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        if (is_new or not self.voucher) and self.category.chart_of_account and self.payment_account:
-            # Ensure voucher type for expenses exists
-            try:
-                VoucherType.objects.get(code="EXP")
-            except VoucherType.DoesNotExist:
-                VoucherType.objects.create(code="EXP", name="Expense")
+        if is_new and self.category.chart_of_account and self.payment_account:
+            ledger = LedgerModel.objects.first()
+            if not ledger:
+                return
 
-            voucher = create_voucher_for_transaction(
-                voucher_type_code="EXP",
-                date=self.date,
-                amount=self.amount,
-                narration=self.description or f"Expense for {self.category.name}",
-                debit_account=self.category.chart_of_account,
-                credit_account=self.payment_account,
-                created_by=getattr(self, "created_by", None),
-                branch=getattr(self, "branch", None),
+            timestamp = timezone.make_aware(
+                datetime.combine(self.date, time.min)
             )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
+
+            je = JournalEntryModel.objects.create(
+                ledger=ledger,
+                timestamp=timestamp,
+                description=self.description or f"Expense for {self.category.name}",
+            )
+
+            TransactionModel.objects.bulk_create(
+                [
+                    TransactionModel(
+                        journal_entry=je,
+                        account=self.category.chart_of_account,
+                        tx_type=TransactionModel.DEBIT,
+                        amount=self.amount,
+                        description=f"Expense - {self.category.name}",
+                    ),
+                    TransactionModel(
+                        journal_entry=je,
+                        account=self.payment_account,
+                        tx_type=TransactionModel.CREDIT,
+                        amount=self.amount,
+                        description="Payment",
+                    ),
+                ]
+            )
+
+            self.journal_entry = je
+            super().save(update_fields=["journal_entry"])
 
