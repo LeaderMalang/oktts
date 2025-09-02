@@ -69,7 +69,6 @@ INSTALLED_APPS = [
     'hr',
     'setting',
     'inventory',
-    'voucher',
     'sale',
     'ecommerce',
     'purchase',
@@ -87,6 +86,7 @@ INSTALLED_APPS = [
     'investor',
     'syncqueue',
     'corsheaders',
+    'django_ledger',
 
 
 ]
@@ -218,3 +218,13 @@ else:
 STATICFILES_DIRS = [
     BASE_DIR / "staticfilesDir",
 ]
+
+# Django Ledger configuration
+DJANGO_LEDGER_CURRENCY_SYMBOL = '$'
+DJANGO_LEDGER_DEFAULT_ACCOUNTS = {
+    'cash': '1000',
+    'accounts_receivable': '1100',
+    'accounts_payable': '2000',
+    'revenue': '4000',
+    'expenses': '5000',
+}
