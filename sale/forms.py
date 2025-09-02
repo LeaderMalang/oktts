@@ -8,7 +8,7 @@ from .models import SaleReturn, SaleReturnItem
 class SaleReturnAdminForm(forms.ModelForm):
     class Meta:
         model = SaleReturn
-        fields = ["return_no", "date", "invoice", "customer", "warehouse", "payment_method", "total_amount"]
+        fields = ["return_no", "date", "invoice", "customer", "warehouse", "payment_method", "total_amount", "voucher"]
         widgets = {
             "total_amount": forms.NumberInput(attrs={"readonly": "readonly"}),
         }
