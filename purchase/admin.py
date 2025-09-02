@@ -92,7 +92,7 @@ class PurchaseInvoiceAdmin(admin.ModelAdmin):
     list_filter = ('warehouse', 'supplier', 'status', 'payment_method')
     search_fields = ('invoice_no', 'company_invoice_number', 'supplier__name')
     inlines = [PurchaseInvoiceItemInline]
-    readonly_fields = ('voucher',)
+    readonly_fields = ('journal_entry',)
     actions = [print_invoice_pdf]
 
     @transaction.atomic
@@ -160,7 +160,7 @@ class PurchaseReturnAdmin(admin.ModelAdmin):
     list_filter = ('warehouse', 'supplier')
     search_fields = ('return_no', 'supplier__name')
     inlines = [PurchaseReturnItemInline]
-    readonly_fields = ('voucher',)
+    readonly_fields = ('journal_entry',)
     actions = [print_invoice_pdf]
 
     # def save_model(self, request, obj, form, change):
