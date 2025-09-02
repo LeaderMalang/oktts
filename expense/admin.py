@@ -33,6 +33,6 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ("date", "category", "amount", "payment_account", "voucher")
-    readonly_fields = ("voucher",)
+    list_display = ("date", "category", "amount", "payment_account")
+    readonly_fields = ()
     actions = [print_invoice_pdf]
