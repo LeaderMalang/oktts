@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from voucher.models import VoucherEntry
+from django_ledger.models import TransactionModel
 from .ratios import current_ratio, gross_profit_margin
 
 from .financial_statements import account_type_balances
@@ -19,7 +19,7 @@ def report_dashboard(request):
 
 @api_view(["GET"])
 def financial_ratios(request):
-    entries = VoucherEntry.objects.all()
+    entries = TransactionModel.objects.all()
     data = {
         "currentRatio": current_ratio(entries=entries),
         "grossProfitMargin": gross_profit_margin(entries=entries),
@@ -30,7 +30,7 @@ def financial_ratios(request):
 
 @require_http_methods(["GET"])
 def financial_statement(request):
-    """Return aggregated voucher entry totals grouped by account type.
+    """Return aggregated transaction totals grouped by account role.
 
     The period can be specified via ``start``/``end`` query parameters (ISO
     formatted) or a ``year`` parameter representing a financial year.

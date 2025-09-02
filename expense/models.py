@@ -5,9 +5,9 @@ from django.utils import timezone
 from django_ledger.models import (
     AccountModel,
     JournalEntryModel,
-    LedgerModel,
     TransactionModel,
 )
+from utils.ledger import get_or_create_default_ledger
 
 
 class ExpenseCategory(models.Model):
@@ -39,7 +39,7 @@ class Expense(models.Model):
         super().save(*args, **kwargs)
 
         if is_new and self.category.chart_of_account and self.payment_account:
-            ledger = LedgerModel.objects.first()
+            ledger = get_or_create_default_ledger()
             if not ledger:
                 return
 

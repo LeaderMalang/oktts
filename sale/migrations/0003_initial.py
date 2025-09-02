@@ -12,15 +12,9 @@ class Migration(migrations.Migration):
         ('inventory', '0003_initial'),
         ('sale', '0002_initial'),
         ('setting', '0001_initial'),
-        ('voucher', '0001_initial'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='saleinvoice',
-            name='voucher',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='voucher.voucher'),
-        ),
         migrations.AddField(
             model_name='saleinvoice',
             name='warehouse',
@@ -55,11 +49,6 @@ class Migration(migrations.Migration):
             model_name='salereturn',
             name='invoice',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='returns', to='sale.saleinvoice'),
-        ),
-        migrations.AddField(
-            model_name='salereturn',
-            name='voucher',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='voucher.voucher'),
         ),
         migrations.AddField(
             model_name='salereturn',

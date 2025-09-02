@@ -1,15 +1,15 @@
 from django.db import models
 
-from voucher.models import ChartOfAccount
-from utils.voucher import create_voucher_for_transaction
+from django_ledger.models import AccountModel
+from utils.ledger import post_simple_entry
 
 
 class InvestorTransaction(models.Model):
     """Represents money movements between the company and an investor.
 
-    When a transaction is saved a corresponding accounting voucher is
-    automatically generated.  The debit and credit accounts for the voucher
-    depend on the ``transaction_type``.
+    When a transaction is saved a corresponding journal entry is
+    automatically generated using the ledger.  The debit and credit accounts
+    for the entry depend on the ``transaction_type``.
     """
 
     TRANSACTION_TYPES = [
@@ -49,16 +49,15 @@ class InvestorTransaction(models.Model):
             debit_account = (
                 self.investor.chart_of_account
                 if mapping["debit"] is None
-                else ChartOfAccount.objects.get(code=mapping["debit"])
+                else AccountModel.objects.get(code=mapping["debit"])
             )
             credit_account = (
                 self.investor.chart_of_account
                 if mapping["credit"] is None
-                else ChartOfAccount.objects.get(code=mapping["credit"])
+                else AccountModel.objects.get(code=mapping["credit"])
             )
 
-            create_voucher_for_transaction(
-                voucher_type_code="INV",
+            post_simple_entry(
                 date=self.date,
                 amount=self.amount,
                 narration=self.description or f"{self.transaction_type.title()} transaction",

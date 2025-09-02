@@ -16,21 +16,18 @@ class FinancialYearSerializer(serializers.ModelSerializer):
 
 
 class PaymentScheduleSerializer(serializers.ModelSerializer):
-    voucher = serializers.SerializerMethodField(read_only=True)
+    journal_entry = serializers.SerializerMethodField(read_only=True)
 
-    def get_voucher(self, obj):
-        if obj.voucher:
+    def get_journal_entry(self, obj):
+        if obj.journal_entry:
             return {
-                "id": obj.voucher.id,
-                "voucher_type": obj.voucher.voucher_type.code,
-                "date": obj.voucher.date,
-                "amount": obj.voucher.amount,
-                "narration": obj.voucher.narration,
-                "status": obj.voucher.status,
+                "id": obj.journal_entry.id,
+                "timestamp": obj.journal_entry.timestamp,
+                "description": obj.journal_entry.description,
             }
         return None
 
     class Meta:
         model = PaymentSchedule
         fields = '__all__'
-        read_only_fields = ('voucher',)
+        read_only_fields = ('journal_entry',)
