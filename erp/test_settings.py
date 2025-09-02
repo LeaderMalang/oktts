@@ -19,3 +19,33 @@ MIGRATION_MODULES = {
     'syncqueue': None,
     'ecommerce': None,
 }
+
+# Limit installed apps to core modules needed for tests
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'drf_spectacular',
+    'user',
+    'hr',
+    'setting',
+    'inventory',
+    'sale',
+    'finance',
+    'django_ledger',
+    'notification',
+]
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
+}
+
+ROOT_URLCONF = 'sale.urls'

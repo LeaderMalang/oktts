@@ -1,7 +1,8 @@
 from django.db import models
-from django_ledger.models.accounts import AccountModel
 
 # Create your models here.
+
+from django_ledger.models.accounts import AccountModel
 
 
 class City(models.Model):
@@ -57,9 +58,9 @@ class Branch(models.Model):
 class Warehouse(models.Model):
     name = models.CharField(max_length=100)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
-    default_sales_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales_warehouse')
-    default_purchase_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='purchase_warehouse')
-    default_cash_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='cash_warehouse')
-    default_bank_account = models.ForeignKey('voucher.ChartOfAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='bank_warehouse')
+    default_sales_account = models.ForeignKey(AccountModel, on_delete=models.SET_NULL, null=True, blank=True, related_name='sales_warehouse')
+    default_purchase_account = models.ForeignKey(AccountModel, on_delete=models.SET_NULL, null=True, blank=True, related_name='purchase_warehouse')
+    default_cash_account = models.ForeignKey(AccountModel, on_delete=models.SET_NULL, null=True, blank=True, related_name='cash_warehouse')
+    default_bank_account = models.ForeignKey(AccountModel, on_delete=models.SET_NULL, null=True, blank=True, related_name='bank_warehouse')
     def __str__(self):
         return self.name

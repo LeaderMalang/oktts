@@ -6,7 +6,7 @@ from inventory.models import Party
 from .models import CustomUser, PasswordResetCode
 from utils.geocode import reverse_geocode
 from setting.models import City, Area
-from voucher.models import ChartOfAccount
+from django_ledger.models.accounts import AccountModel
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User model exposing basic fields."""
 
@@ -99,7 +99,20 @@ class PartySerializer(serializers.ModelSerializer):
         validated_data.pop("user", None)
         party = Party.objects.create(user=user, **validated_data)
         code=party.name[:3].upper()+str(party.id).zfill(4)
-        account=ChartOfAccount.objects.create(name=party.name,account_type_id=1,code=code,parent_account_id=3)
+        # Basic account creation for the party if a chart of account exists
+        try:
+            from django_ledger.models.chart_of_accounts import ChartOfAccountModel
+            coa = ChartOfAccountModel.objects.first()
+            if coa:
+                AccountModel.objects.create(
+                    name=party.name,
+                    code=code,
+                    role="asset_ca_receivables",
+                    balance_type="debit",
+                    coa_model=coa,
+                )
+        except Exception:
+            pass
         geo = reverse_geocode(validated_data.get("latitude"), validated_data.get("longitude"))
         party.chart_of_account=account
         if geo.get("ok"):
