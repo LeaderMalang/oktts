@@ -1,7 +1,7 @@
 from django.db import models
 
-from voucher.models import ChartOfAccount
-from .ledger import post_expense_ledger
+from voucher.models import ChartOfAccount, Voucher, VoucherType
+from utils.voucher import create_voucher_for_transaction
 
 
 class ExpenseCategory(models.Model):
@@ -24,19 +24,29 @@ class Expense(models.Model):
     payment_account = models.ForeignKey(
         ChartOfAccount, on_delete=models.PROTECT, related_name="expense_payments"
     )
+    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        if is_new and self.category.chart_of_account and self.payment_account:
-            post_expense_ledger(
+        if (is_new or not self.voucher) and self.category.chart_of_account and self.payment_account:
+            # Ensure voucher type for expenses exists
+            try:
+                VoucherType.objects.get(code="EXP")
+            except VoucherType.DoesNotExist:
+                VoucherType.objects.create(code="EXP", name="Expense")
+
+            voucher = create_voucher_for_transaction(
+                voucher_type_code="EXP",
                 date=self.date,
                 amount=self.amount,
                 narration=self.description or f"Expense for {self.category.name}",
-                expense_account=self.category.chart_of_account,
-                payment_account=self.payment_account,
+                debit_account=self.category.chart_of_account,
+                credit_account=self.payment_account,
                 created_by=getattr(self, "created_by", None),
                 branch=getattr(self, "branch", None),
             )
+            self.voucher = voucher
+            super().save(update_fields=["voucher"])
 
