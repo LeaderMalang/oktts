@@ -14,7 +14,7 @@ from unittest.mock import patch
 from inventory.models import Party, Product
 
 from setting.models import Branch, Warehouse, Company, Distributor, Group, City, Area
-from voucher.models import AccountType, ChartOfAccount, VoucherType, Voucher
+from voucher.models import AccountType, ChartOfAccount, VoucherType
 from voucher.test_utils import assert_ledger_entries
 from hr.models import Employee
 from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
@@ -157,12 +157,10 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             status="Paid",
         )
 
-        voucher = Voucher.objects.get(
-            narration__contains=f"Sale Invoice {invoice.invoice_no}"
-        )
+        self.assertIsNotNone(invoice.voucher)
         assert_ledger_entries(
             self,
-            voucher,
+            invoice.voucher,
             [
                 (self.customer_account, Decimal("10"), Decimal("0")),
                 (self.sales_account, Decimal("0"), Decimal("10")),
@@ -184,12 +182,10 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             status="Paid",
         )
 
-        voucher = Voucher.objects.get(
-            narration__contains=f"Sale Invoice {invoice.invoice_no}"
-        )
+        self.assertIsNotNone(invoice.voucher)
         assert_ledger_entries(
             self,
-            voucher,
+            invoice.voucher,
             [
                 (self.cash_account, Decimal("110"), Decimal("0")),
                 (self.sales_account, Decimal("0"), Decimal("100")),
@@ -205,17 +201,22 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             warehouse=self.warehouse,
             total_amount=5,
         )
-        voucher = Voucher.objects.get(
-            narration__contains=f"Sale Return {return_invoice.return_no}"
-        )
+        self.assertIsNotNone(return_invoice.voucher)
         assert_ledger_entries(
             self,
-            voucher,
+            return_invoice.voucher,
             [
                 (self.sales_account, Decimal("5"), Decimal("0")),
                 (self.customer_account, Decimal("0"), Decimal("5")),
             ],
         )
+
+
+        debit_entry = invoice.voucher.entries.get(debit=invoice.grand_total)
+        credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
+        self.assertEqual(debit_entry.account, self.cash_account)
+        self.assertEqual(credit_entry.account, self.sales_account)
+
     def test_credit_invoice_uses_customer_account(self):
         invoice = SaleInvoice.objects.create(
             invoice_no="INV-003",
@@ -232,11 +233,8 @@ class SaleInvoiceVoucherLinkTest(APITestCase):
             payment_method="Credit",
             status="Pending",
         )
-        voucher = Voucher.objects.get(
-            narration__contains=f"Sale Invoice {invoice.invoice_no}"
-        )
-        debit_entry = voucher.entries.get(debit=invoice.grand_total)
-        credit_entry = voucher.entries.get(credit=invoice.grand_total)
+        debit_entry = invoice.voucher.entries.get(debit=invoice.grand_total)
+        credit_entry = invoice.voucher.entries.get(credit=invoice.grand_total)
         self.assertEqual(debit_entry.account, self.customer_account)
         self.assertEqual(credit_entry.account, self.sales_account)
 
@@ -487,11 +485,8 @@ class SaleReturnVoucherTest(APITestCase):
 
         self.batch.refresh_from_db()
         self.assertEqual(self.batch.quantity, 5)
-        voucher = Voucher.objects.get(
-            narration__contains=f"Sale Return {sr.return_no}"
-        )
-        debit = voucher.entries.get(debit__gt=0)
-        credit = voucher.entries.get(credit__gt=0)
+        debit = sr.voucher.entries.get(debit__gt=0)
+        credit = sr.voucher.entries.get(credit__gt=0)
         self.assertEqual(debit.account, self.sales_account)
         self.assertEqual(credit.account, self.cash_account)
         self.customer.refresh_from_db()
@@ -525,11 +520,8 @@ class SaleReturnVoucherTest(APITestCase):
 
         self.batch.refresh_from_db()
         self.assertEqual(self.batch.quantity, 2)
-        voucher = Voucher.objects.get(
-            narration__contains=f"Sale Return {sr.return_no}"
-        )
-        debit = voucher.entries.get(debit__gt=0)
-        credit = voucher.entries.get(credit__gt=0)
+        debit = sr.voucher.entries.get(debit__gt=0)
+        credit = sr.voucher.entries.get(credit__gt=0)
         self.assertEqual(debit.account, self.sales_account)
         self.assertEqual(credit.account, self.customer_account)
         self.customer.refresh_from_db()

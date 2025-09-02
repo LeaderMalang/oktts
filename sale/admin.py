@@ -101,7 +101,7 @@ class SaleReturnForm(forms.ModelForm):
         model = SaleReturn
         fields = (
             'return_no', 'date', 'invoice', 'customer', 'warehouse',
-            'payment_method', 'total_amount'
+            'payment_method', 'total_amount', 'voucher'
         )
 
     class Media:
@@ -119,6 +119,7 @@ class SaleReturnAdmin(admin.ModelAdmin):
     list_display = ('return_no', 'date', 'customer', 'warehouse', 'payment_method', 'total_amount')
     list_filter  = ('date', 'warehouse', 'payment_method')
     search_fields = ('return_no', 'customer__name')
+    readonly_fields = ('voucher',)
     actions = [print_invoice_pdf]
     # --------- server-side defaults when opening Add with ?invoice=ID -----------
     def get_changeform_initial_data(self, request):
