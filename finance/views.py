@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from .models import FinancialYear, PaymentSchedule
 from .serializers import FinancialYearSerializer, PaymentScheduleSerializer
-from utils.voucher import create_voucher_for_transaction
+from utils.ledger import post_simple_entry
 
 
 class PaymentScheduleViewSet(viewsets.ModelViewSet):
@@ -25,29 +25,23 @@ class PaymentScheduleViewSet(viewsets.ModelViewSet):
                 invoice.save(update_fields=["paid_amount", "status"])
 
                 if schedule.purchase_invoice:
-                    voucher = create_voucher_for_transaction(
-                        voucher_type_code="PIN",
+                    je = post_simple_entry(
                         date=invoice.date,
                         amount=schedule.amount,
                         narration=f"Installment payment for Purchase Invoice {invoice.invoice_no}",
                         debit_account=invoice.supplier.chart_of_account,
                         credit_account=invoice.warehouse.default_cash_account or invoice.warehouse.default_bank_account,
-                        created_by=getattr(invoice, "created_by", None),
-                        branch=getattr(invoice, "branch", None),
                     )
                 else:
-                    voucher = create_voucher_for_transaction(
-                        voucher_type_code="SIN",
+                    je = post_simple_entry(
                         date=invoice.date,
                         amount=schedule.amount,
                         narration=f"Installment payment for Sale Invoice {invoice.invoice_no}",
                         debit_account=invoice.warehouse.default_cash_account or invoice.warehouse.default_bank_account,
                         credit_account=invoice.customer.chart_of_account,
-                        created_by=getattr(invoice, "created_by", None),
-                        branch=getattr(invoice, "branch", None),
                     )
-                schedule.voucher = voucher
-                schedule.save(update_fields=["voucher"])
+                schedule.journal_entry = je
+                schedule.save(update_fields=["journal_entry"])
         serializer = self.get_serializer(schedule)
         return Response(serializer.data)
 

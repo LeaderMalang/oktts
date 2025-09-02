@@ -14,10 +14,10 @@ from django.utils import timezone
 from django_ledger.models import (
     AccountModel,
     JournalEntryModel,
-    LedgerModel,
     TransactionModel,
 )
 from utils.stock import stock_return, stock_out
+from utils.ledger import get_or_create_default_ledger
 from finance.models import PaymentTerm, PaymentSchedule
 from setting.constants import TAX_PAYABLE_ACCOUNT_CODE
 
@@ -123,7 +123,7 @@ class SaleInvoice(models.Model):
 
         # 4) Create journal entry once
         if not self.journal_entry:
-            ledger = LedgerModel.objects.first()
+            ledger = get_or_create_default_ledger()
             if ledger and self.warehouse.default_sales_account and self.customer.chart_of_account:
                 timestamp = timezone.make_aware(
                     datetime.combine(self.date, time.min)
@@ -236,7 +236,7 @@ class SaleReturn(models.Model):
         # 2) Journal entry (single composite)
         if not self.journal_entry:
             refund_now = self.payment_method == "Cash"
-            ledger = LedgerModel.objects.first()
+            ledger = get_or_create_default_ledger()
             if ledger and self.customer.chart_of_account:
                 timestamp = timezone.make_aware(
                     datetime.combine(self.date, time.min)

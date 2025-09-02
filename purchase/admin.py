@@ -148,7 +148,7 @@ class PurchaseInvoiceAdmin(admin.ModelAdmin):
                 ref_id=invoice.pk,
             )
 
-        # DRF/Model layer auto‑voucher logic (if present) runs on invoice.save()
+        # DRF/Model layer auto‑ledger logic runs on invoice.save()
         formset.save_m2m()  # finish
 
 class PurchaseReturnItemInline(admin.TabularInline):

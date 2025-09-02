@@ -73,7 +73,6 @@ INSTALLED_APPS = [
     'user',
     'finance',
     'hr',
-    'voucher',
     'django_ledger',
     'corsheaders',
 

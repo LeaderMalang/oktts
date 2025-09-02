@@ -88,7 +88,7 @@ class StockMovement(models.Model):
     reason = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     ref_model = models.CharField(max_length=100, blank=True)  # e.g., 'SaleInvoice'
-    ref_id = models.PositiveIntegerField(null=True, blank=True)  # link to invoice or voucher
+    ref_id = models.PositiveIntegerField(null=True, blank=True)  # link to invoice or ledger entry
 
 
     def __str__(self):
