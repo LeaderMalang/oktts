@@ -1,15 +1,15 @@
 from django.db import models
 from inventory.models import Product, Party
 from setting.models import Warehouse
-from voucher.models import Voucher, ChartOfAccount, VoucherType
-from utils.stock import stock_in, stock_return, stock_out
-from utils.voucher import create_voucher_for_transaction
+from utils.stock import stock_in, stock_out
 from finance.models import PaymentTerm, PaymentSchedule
 from datetime import timedelta
-from setting.constants import TAX_RECEIVABLE_ACCOUNT_CODE
 from decimal import Decimal
 from django.db import transaction
-from utils.voucher import post_composite_purchase_voucher,post_composite_purchase_return_voucher
+from utils.ledger import (
+    post_purchase_invoice_ledger,
+    post_purchase_return_ledger,
+)
 
 
 
@@ -36,7 +36,6 @@ class PurchaseInvoice(models.Model):
     payment_term = models.ForeignKey(PaymentTerm, on_delete=models.SET_NULL, null=True, blank=True)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     @transaction.atomic
     def save(self, *args, **kwargs):
@@ -74,14 +73,15 @@ class PurchaseInvoice(models.Model):
                         amount=installment_amount,
                     )
 
-        # 4) Post the composite voucher once
-        if not self.voucher:
-            # Decide cash/bank account only if paid_amount > 0 (cash purchase or partial cash)
+            # 4) Post ledger entries for the purchase
             cash_or_bank = None
             if (self.payment_method == "Cash") or (Decimal(self.paid_amount or 0) > 0):
-                cash_or_bank = self.warehouse.default_cash_account or self.warehouse.default_bank_account
+                cash_or_bank = (
+                    self.warehouse.default_cash_account
+                    or self.warehouse.default_bank_account
+                )
 
-            voucher = post_composite_purchase_voucher(
+            post_purchase_invoice_ledger(
                 date=self.date,
                 invoice_no=self.invoice_no,
                 grand_total=Decimal(self.grand_total),
@@ -93,8 +93,6 @@ class PurchaseInvoice(models.Model):
                 created_by=getattr(self, "created_by", None),
                 branch=getattr(self, "branch", None),
             )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
 
 
 class PurchaseInvoiceItem(models.Model):
@@ -124,7 +122,6 @@ class PurchaseReturn(models.Model):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default="Cash")
-    voucher = models.ForeignKey(Voucher, on_delete=models.SET_NULL, null=True, blank=True)
 
     @transaction.atomic
     def save(self, *args, **kwargs):
@@ -140,15 +137,17 @@ class PurchaseReturn(models.Model):
                     reason=f"Purchase Return {self.return_no}",
                 )
 
-        # 2) Voucher (single composite)
-        if not self.voucher:
+        # 2) Post ledger entries for the return
+        if is_new:
             refund_now = True if self.payment_method == "Cash" else False
             cash_or_bank = _cash_or_bank_for(self.warehouse) if refund_now else None
 
-            # Choose your Purchase Returns account (contra expense)
-            purchase_return_account = getattr(self.warehouse, "default_purchase_return_account", None) or self.warehouse.default_purchase_account
+            purchase_return_account = (
+                getattr(self.warehouse, "default_purchase_return_account", None)
+                or self.warehouse.default_purchase_account
+            )
 
-            voucher = post_composite_purchase_return_voucher(
+            post_purchase_return_ledger(
                 date=self.date,
                 return_no=self.return_no,
                 total_amount=Decimal(self.total_amount),
@@ -160,13 +159,12 @@ class PurchaseReturn(models.Model):
                 created_by=getattr(self, "created_by", None),
                 branch=getattr(self, "branch", None),
             )
-            self.voucher = voucher
-            super().save(update_fields=["voucher"])
 
             # 3) Supplier balance: ONLY adjust for credit note (A/P reduced).
-            # (For cash refund we don't touch running balance unless your policy does.)
             if not refund_now:
-                self.supplier.current_balance = (self.supplier.current_balance or 0) - Decimal(self.total_amount)
+                self.supplier.current_balance = (
+                    self.supplier.current_balance or 0
+                ) - Decimal(self.total_amount)
                 self.supplier.save(update_fields=["current_balance"])
         
 
