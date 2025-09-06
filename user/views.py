@@ -26,6 +26,7 @@ from inventory.models import Party
 from hr.models import Employee
 from hr.serializers import EmployeeSerializer
 from user.models import CustomUser, PasswordResetCode
+from django.db import transaction
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet providing CRUD operations for users and a `me` endpoint."""
 
@@ -77,7 +78,9 @@ class AuthViewSet(viewsets.ViewSet):
     def refresh(self, request):
         token, _ = Token.objects.get_or_create(user=request.user)
         return Response({"token": token.key})
-
+    
+    
+    @transaction.atomic
     @action(detail=False, methods=["post"], url_path="register",parser_classes=[MultiPartParser, FormParser])
     def register(self, request):
         """Register a new customer with inactive user account."""
